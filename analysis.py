@@ -93,8 +93,11 @@ def main(argv):
     for i, res in enumerate(results):
         if i == print_limit:
             break
-        print('{0:>30} | {1}'.format(
-            res[0] if len(res[0]) <= 30 else res[0][:27] + "…", res[1])
+        total = sum([res[1] for res in results])
+        highest_value = max([res[1] for res in results])
+        print('{0:>30} | {1:<4} {2}'.format(
+            res[0] if len(res[0]) <= 30 else res[0][:27] + "…", res[1], '#' * int((res[1]*30)/highest_value)
+            )
         )
 
 
