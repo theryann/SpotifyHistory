@@ -88,7 +88,7 @@ def main(argv):
     print('\nshowing', print_limit, 'results (specify with --int or --all)\n')
 
     # output results
-    print('{0:>30} | Results'.format(header))
+    print('{0:>30} | Plays'.format(header))
     print('-'*40)
     for i, res in enumerate(results):
         if i == print_limit:
@@ -96,7 +96,7 @@ def main(argv):
         total = sum([res[1] for res in results])
         highest_value = max([res[1] for res in results])
         print('{0:>30} | {1:<4} {2}'.format(
-            res[0] if len(res[0]) <= 30 else res[0][:27] + "…", res[1], '#' * int((res[1]*30)/highest_value)
+            res[0] if len(res[0]) <= 30 else res[0][:27] + "…", res[1], '#' * int((res[1]*50)/highest_value)
             )
         )
 
