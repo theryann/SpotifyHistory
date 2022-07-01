@@ -2,3 +2,6 @@ __pycache__/
 secrets.py
 history.csv
 initial_api_tokens.py
+*.json
+*.txt
+
