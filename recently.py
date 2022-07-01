@@ -35,11 +35,7 @@ class RecentSongs():
 
     def save_songs_to_list(self):
         """" parse data from JSON and write to CSV """
-
-        # reading data from file (while debugging to avoid endless requests)
-        # with open('recent.json') as fd:
-        #     self.response_json = json.load(fd)
-        
+       
         # create list with songs that are already contained to avoid dublicates
         contained_songs = []
         with open('history.csv', 'r') as history_csv:
@@ -79,17 +75,33 @@ class RecentSongs():
 
 
     def update_song_database(self):
-        pass
+        """ go to the csv file and wirte all songs that appear for the first time in the database.json """
         
-         
+        with open('song_database.json', 'r') as fd:
+            database = json.load(fd)
         
-
-
-
-
-
-
-
+        with open('history.csv', 'r') as fd:
+            reader = csv.reader(fd)
+            for line in reader:
+                if line[1] not in database:
+                    song_attributes = {
+                        "titel"       : line[2],
+                        "album"       : line[4],
+                        "duration"    : line[3],
+                        "popularity"  : line[5],
+                        "is_explicit" : line[6],
+                        "artist"      : [],
+                        "genre"       : []
+                    }                    
+                    
+                    for artist in line[7].split(','):
+                        song_attributes["artist"].append(artist.strip())                    
+                        
+                    database[line[1]] = song_attributes
+                    
+        with open('song_database.json', 'w') as fd:
+            json.dump(database, fd)
+            
 
 if __name__ == "__main__":
 
