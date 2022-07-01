@@ -85,7 +85,7 @@ def main(argv):
             break
         elif arg == '--all':
             print_limit = len(results)
-    print('\nshowing', print_limit, 'results (specify with --int or --all)\n')
+    print('\nshowing', print_limit, 'results (specify with --<int> or --all)\n')
 
     # output results
     print('{0:>30} | Results'.format(header))

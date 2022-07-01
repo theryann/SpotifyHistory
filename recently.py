@@ -33,7 +33,7 @@ class RecentSongs():
         # with open('recent.json', 'w') as fd:
         #     json.dump(self.response_json, fd)
 
-    def save_songs(self):
+    def save_songs_to_list(self):
         """" parse data from JSON and write to CSV """
 
         # reading data from file (while debugging to avoid endless requests)
@@ -78,7 +78,10 @@ class RecentSongs():
                 writer.writerow(row)
 
 
-
+    def update_song_database(self):
+        pass
+        
+         
         
 
 
@@ -90,7 +93,8 @@ class RecentSongs():
 
 if __name__ == "__main__":
 
-    a = RecentSongs()
-    a.find_songs()
-    a.save_songs()
+    songs = RecentSongs()
+    songs.find_songs()
+    songs.save_songs_to_list()
+    songs.update_song_database()
 
