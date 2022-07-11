@@ -102,6 +102,51 @@ class RecentSongs():
                     
         with open('song_database.json', 'w') as fd:
             json.dump(database, fd)
+         
+    def update_song_database_with_audio_features(self):
+        with open('song_database.json', 'r') as fd:
+            database = json.load(fd)
+            
+        track_ids = []
+        
+        number_of_requests = 0
+        
+        for i, song_id in enumerate(database):
+            
+            # filling 10 new track id list
+            if len(track_ids) < 10:
+                if "audio-features" not in database[song_id]:
+                    track_ids.append(song_id)
+                    print('appended', song_id)
+                    
+            # making bulk request for all IDs
+            else: 
+                ids_string = ','.join(track_ids)
+                
+                print(ids_string)
+                
+                result = self.get_multiple_audio_features(ids_string)
+                number_of_requests += 1                
+                
+                # bad response handeling:
+                if not "audio_features" in result:
+                    print('ERROR:', result)
+                    break
+                
+                # append succesful response to database
+                for track in result["audio_features"]:
+                    id = track["id"]
+                    database[id]["audio-features"] = track
+                    
+                track_ids = []
+                
+                if number_of_requests == 5:
+                    break
+
+        
+        # write updated database to JSON            
+        with open('song_database.json', 'w') as fd:
+            json.dump(database, fd)
             
 
     def get_audio_features(self, id):
@@ -121,13 +166,12 @@ class RecentSongs():
 
         return response.json()
         
-
     def get_multiple_audio_features(self, ids):
         """ [REQUEST] param: ids, comma seperated,
             makes GET request and returns audio features of MULTIPLE Tracks
         """ 
         
-        query = f'https://api.spotify.com/v1/audio-features?{ids}'
+        query = f'https://api.spotify.com/v1/audio-features?ids={ids}'
 
         response = requests.get(
             query,
@@ -136,6 +180,7 @@ class RecentSongs():
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         )
+        print('[ REQUEST ] multiple audio features')
 
         return response.json()
         
@@ -148,6 +193,6 @@ if __name__ == "__main__":
     # songs.find_songs()
     # songs.save_songs_to_list()
     # songs.update_song_database_with_history_data()
-    songs.get_audio_features('65AaGX9P3cNe2Qm81efRpW')
+    songs.update_song_database_with_audio_features()
     
 
