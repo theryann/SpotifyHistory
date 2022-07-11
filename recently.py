@@ -15,7 +15,7 @@ class RecentSongs():
         self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
 
     def find_songs(self):
-        """ make GET request to API and save JSON into self.response_json variable and optional as recent.json file"""
+        """ [REQUEST] make GET request to API and save JSON into self.response_json variable and optional as recent.json file"""
 
         query = 'https://api.spotify.com/v1/me/player/recently-played?limit=50'
 
@@ -30,11 +30,12 @@ class RecentSongs():
         self.response_json = response.json()
 
         # writing data to file (while debugging to avoid endless requests)
-        # with open('recent.json', 'w') as fd:
-        #     json.dump(self.response_json, fd)
+        return
+        with open('recent.json', 'w') as fd:
+            json.dump(self.response_json, fd)
 
     def save_songs_to_list(self):
-        """" parse data from JSON and write to CSV """
+        """ [OFFLINE] parse data from JSON and write to CSV """
        
         # create list with songs that are already contained to avoid dublicates
         contained_songs = []
@@ -74,8 +75,8 @@ class RecentSongs():
                 writer.writerow(row)
 
 
-    def update_song_database(self):
-        """ go to the csv file and wirte all songs that appear for the first time in the database.json """
+    def update_song_database_with_history_data(self):
+        """ [OFFLINE] goes through the csv file and wirtes all songs that appear for the first time in the database.json """
         
         with open('song_database.json', 'r') as fd:
             database = json.load(fd)
@@ -103,10 +104,50 @@ class RecentSongs():
             json.dump(database, fd)
             
 
+    def get_audio_features(self, id):
+        """ [REQUEST] param: id,
+            makes GET request and returns audio features of ONE Track
+        """        
+        
+        query = f'https://api.spotify.com/v1/audio-features/{id}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        )
+
+        return response.json()
+        
+
+    def get_multiple_audio_features(self, ids):
+        """ [REQUEST] param: ids, comma seperated,
+            makes GET request and returns audio features of MULTIPLE Tracks
+        """ 
+        
+        query = f'https://api.spotify.com/v1/audio-features?{ids}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        )
+
+        return response.json()
+        
+
+
+
 if __name__ == "__main__":
 
     songs = RecentSongs()
-    songs.find_songs()
-    songs.save_songs_to_list()
-    songs.update_song_database()
+    # songs.find_songs()
+    # songs.save_songs_to_list()
+    # songs.update_song_database_with_history_data()
+    songs.get_audio_features('65AaGX9P3cNe2Qm81efRpW')
+    
 
