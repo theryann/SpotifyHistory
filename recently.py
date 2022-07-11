@@ -190,9 +190,9 @@ class RecentSongs():
 if __name__ == "__main__":
 
     songs = RecentSongs()
-    # songs.find_songs()
-    # songs.save_songs_to_list()
-    # songs.update_song_database_with_history_data()
+    songs.find_songs()
+    songs.save_songs_to_list()
+    songs.update_song_database_with_history_data()
     songs.update_song_database_with_audio_features()
     
 
