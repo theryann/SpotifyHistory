@@ -1,4 +1,5 @@
 import requests
+import time
 import json
 import csv
 from secrets import spotify_user_id
@@ -57,7 +58,7 @@ class RecentSongs():
                 duration_ms = song['track']['duration_ms']
                 popularity  = song['track']['popularity']
                 is_explicit = song['track']['explicit']
-                artist      = song['track']['artists'][0]['name']
+                artist      = song['track']['artists'][0]['id']
 
 
                 # add artists if more than one credited 
@@ -122,9 +123,7 @@ class RecentSongs():
             # making bulk request for all IDs
             else: 
                 ids_string = ','.join(track_ids)
-                
-                print(ids_string)
-                
+                        
                 result = self.get_multiple_audio_features(ids_string)
                 number_of_requests += 1                
                 
@@ -147,6 +146,48 @@ class RecentSongs():
         # write updated database to JSON            
         with open('song_database.json', 'w') as fd:
             json.dump(database, fd)
+            
+    def update_song_database_with_artists(self):
+        with open('song_database.json', 'r') as fd:
+            song_database = json.load(fd)
+        
+        number_of_requests = 0
+        
+        track_ids = []
+        
+        for song_id in song_database:
+            if len(track_ids) < 10:
+                if type(song_database[song_id]["artist"][0]) is not dict:
+                    track_ids.append(song_id)
+                    
+            else:
+                songs = self.get_multiple_tracks(','.join(track_ids))
+                number_of_requests += 1
+                
+                if not "tracks" in songs:
+                    print('[ ERROR ]', songs)
+                    break
+                
+                for track in songs["tracks"]:
+                    artist_ids_string = ','.join(artist["id"] for artist in track["artists"]) 
+                    
+                    artists = self.get_multiple_artists(artist_ids_string)
+                    number_of_requests += 1
+                    
+                    if not "artists" in artists:
+                        print('[ ERROR ]', songs)
+                        break
+                    
+                    song_database[track["id"]]["artist"] = artists["artists"]
+                    print("Added for", song_database[track["id"]]['titel'])
+                    
+                    track_ids = []
+                    break
+                
+        
+        # write updated database to JSON            
+        with open('song_database.json', 'w') as fd:
+            json.dump(song_database, fd)
             
 
     def get_audio_features(self, id):
@@ -184,15 +225,70 @@ class RecentSongs():
 
         return response.json()
         
+    def get_multiple_tracks(self, ids):
+        """ [REQUEST] param: ids, comma seperated,
+            makes GET request and returns MULTIPLE Tracks
+        """ 
+        
+        query = f'https://api.spotify.com/v1/tracks?ids={ids}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        )
+        print('[ REQUEST ] multiple artists features')
+
+        return response.json()
+    
+    def get_multiple_artists(self, ids):
+        """ [REQUEST] param: ids, comma seperated,
+            makes GET request and returns artists of MULTIPLE Tracks
+        """ 
+        
+        query = f'https://api.spotify.com/v1/artists?ids={ids}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        )
+        print('[ REQUEST ] multiple artists features')
+
+        return response.json()
+    
+    def get_artists(self, id):
+        """ [REQUEST] param: ids, comma seperated,
+            makes GET request and returns artists of MULTIPLE Tracks
+        """ 
+        
+        query = f'https://api.spotify.com/v1/artists/id={id}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        )
+        print('[ REQUEST ] multiple artists features')
+
+        return response.json()
+        
 
 
 
 if __name__ == "__main__":
 
     songs = RecentSongs()
-    songs.find_songs()
-    songs.save_songs_to_list()
-    songs.update_song_database_with_history_data()
-    songs.update_song_database_with_audio_features()
+    # songs.find_songs()
+    # songs.save_songs_to_list()
+    # songs.update_song_database_with_history_data()
+    # songs.update_song_database_with_audio_features()
+    songs.update_song_database_with_artists()
     
 
