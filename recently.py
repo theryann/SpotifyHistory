@@ -288,11 +288,10 @@ class RecentSongs():
 
 if __name__ == "__main__":
 
+    print('Find new Songs')
     songs = RecentSongs()
     songs.find_songs()
     songs.save_songs_to_list()
-    songs.update_song_database_with_history_data()
-    songs.update_song_database_with_audio_features()
-    songs.update_song_database_with_artists()
+
     
 
