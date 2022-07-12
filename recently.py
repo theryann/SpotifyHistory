@@ -118,7 +118,6 @@ class RecentSongs():
             if len(track_ids) < 10:
                 if "audio-features" not in database[song_id]:
                     track_ids.append(song_id)
-                    print('appended', song_id)
                     
             # making bulk request for all IDs
             else: 
@@ -156,6 +155,11 @@ class RecentSongs():
         track_ids = []
         
         for song_id in song_database:
+            
+            if number_of_requests > 50:
+                print('\n50 Requests done')
+                break
+            
             if len(track_ids) < 10:
                 if type(song_database[song_id]["artist"][0]) is not dict:
                     track_ids.append(song_id)
@@ -182,7 +186,7 @@ class RecentSongs():
                     print("Added for", song_database[track["id"]]['titel'])
                     
                     track_ids = []
-                    break
+                    
                 
         
         # write updated database to JSON            
@@ -257,7 +261,7 @@ class RecentSongs():
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         )
-        print('[ REQUEST ] multiple artists features')
+        print('[ REQUEST ] multiple artists features', ids)
 
         return response.json()
     
