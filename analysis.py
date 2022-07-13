@@ -90,7 +90,7 @@ def main(argv):
         for row in data:
             song = song_db[row[1]]
             if 'audio-features' in song:
-                modes = ['Major', 'Minor']
+                modes = ['Minor', 'Major']
                 elements.append(modes[song['audio-features']['mode']])
         
         
