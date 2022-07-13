@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import csv
 import sys
 
@@ -9,6 +10,9 @@ with open('history.csv', 'r') as fd:
     reader = csv.reader(fd)
     for line in reader:
         data.append(line)
+        
+with open('song_database.json', 'r') as fd:
+    song_db = json.load(fd)
 
 
 def main(argv):
@@ -18,7 +22,7 @@ def main(argv):
     print_limit = 20
 
     for arg in argv:
-        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit', '-a', '--artist', '-o', '--order', '-c', '-count', '--reverse', '--all']:
+        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit', '-a', '--artist','-g', '--genre','--mode','--tempo','--key', '-o', '--order', '-c', '-count', '--reverse', '--all']:
             if not arg.strip('-').isdigit():
                 print(arg, 'is not a known argument. Check for "-" and "--" errors.')
                 quit()
@@ -46,6 +50,50 @@ def main(argv):
             artist_list = row[7].split(',')
             for artist in artist_list:
                 elements.append(artist.strip())
+     
+    elif '-g' in argv or '--genre' in argv:
+        header = 'Genre'
+        for row in data:
+            for artist in song_db[row[1]]['artist']:
+                if type(artist) is dict:
+                    for genre in artist['genres']:
+                        elements.append(genre)
+
+        
+    elif '--tempo' in argv:
+        header = 'Tempo'
+        for row in data:
+            song = song_db[row[1]]
+            if 'audio-features' in song:
+                elements.append(song['audio-features']['tempo'])
+        
+        
+    elif '--key' in argv:
+        header = 'Key'
+        for row in data:
+            song = song_db[row[1]]
+            if 'audio-features' in song:
+                keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'G', 'G#', 'A', 'A#', 'B']
+                key_of_song = keys[song['audio-features']['key'] - 1]
+                if '--mode' in argv:
+                    modes = [' ', 'm']
+                    key_of_song += modes[song['audio-features']['mode']]     
+                    
+                    while len(key_of_song) < 3: # damit alle gleich breit foramttiert werden
+                        key_of_song += ' ' 
+                
+                elements.append(key_of_song)
+                
+        
+    elif '--mode' in argv:
+        header = 'Tempo'
+        for row in data:
+            song = song_db[row[1]]
+            if 'audio-features' in song:
+                modes = ['Major', 'Minor']
+                elements.append(modes[song['audio-features']['mode']])
+        
+        
 
     # Daten zählen
     for el in elements:
