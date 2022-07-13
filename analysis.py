@@ -78,8 +78,8 @@ def main(argv):
                 if '--mode' in argv:
                     modes = [' ', 'm']
                     key_of_song += modes[song['audio-features']['mode']]     
-                    
-                    while len(key_of_song) < 3: # damit alle gleich breit foramttiert werden
+
+                    while len(key_of_song) < 3: # damit alle gleich breit formatiert werden
                         key_of_song += ' ' 
                 
                 elements.append(key_of_song)
