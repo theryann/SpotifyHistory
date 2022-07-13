@@ -66,7 +66,7 @@ class RecentSongs():
                     for art in song['track']['artists']:
                         if song['track']['artists'][0] == art:
                             continue
-                        artist += ', ' + art['name']
+                        artist += ',' + art['id']
 
                 # write Data to CSV (history.csv)
                 row = [played_at, song_id, song_name, duration_ms, album, popularity, is_explicit, artist]
