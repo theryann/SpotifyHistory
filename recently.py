@@ -192,8 +192,26 @@ class RecentSongs():
         # write updated database to JSON            
         with open('song_database.json', 'w') as fd:
             json.dump(song_database, fd)
-            
+    
+    def update_artists_with_similar_known_names(self):
+        with open('song_database.json', 'r') as fd:
+            database = json.load(fd) 
+        
+        for song_id in database:
+            artist = database[song_id]["artist"]
+            if len(artist) == 1 and type(artist[0]) == str:
 
+                for search_id in database:
+                    search_artist = database[search_id]["artist"]
+                    if len(search_artist) == 1 and type(search_artist[0]) == dict:
+                        if artist[0] == search_artist[0]["name"]:
+                            print(artist[0], search_artist[0]["name"], song_id, search_id)
+                            database[song_id]["artist"] = search_artist
+                            break
+
+        with open('song_database.json', 'w') as fd:
+            json.dump(database, fd) 
+                        
     def get_audio_features(self, id):
         """ [REQUEST] param: id,
             makes GET request and returns audio features of ONE Track
