@@ -3,6 +3,7 @@
 import json
 import csv
 import sys
+from tkinter import EXCEPTION
 
 data = []
 
@@ -16,13 +17,16 @@ with open('song_database.json', 'r') as fd:
 
 
 def main(argv):
+    countable_attribute = True  # should all occurences be counted and sorted by that (=True) OR False for atributes that are sortable by nature, i.e. song duration
+    
     elements = []
     results = []
     header = ''
+    values = 'Plays'
     print_limit = 20
 
     for arg in argv:
-        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit', '-a', '--artist','-g', '--genre','--mode','--tempo','--key', '-o', '--order', '-c', '-count', '--reverse', '--all']:
+        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit', '-a', '-d', '--duration','--tempo', '--artist','-g', '--genre','--mode','--tempo','--key', '-o', '--order', '-c', '-count', '--reverse', '--all']:
             if not arg.strip('-').isdigit():
                 print(arg, 'is not a known argument. Check for "-" and "--" errors.')
                 quit()
@@ -53,6 +57,7 @@ def main(argv):
      
     elif '-g' in argv or '--genre' in argv:
         header = 'Genre'
+        values = 'Artists'
         for row in data:
             for artist in song_db[row[1]]['artist']:
                 if type(artist) is dict:
@@ -61,15 +66,28 @@ def main(argv):
 
         
     elif '--tempo' in argv:
-        header = 'Tempo'
+        header = 'Song'
+        values = 'BPM'
+        countable_attribute = False
         for row in data:
             song = song_db[row[1]]
             if 'audio-features' in song:
-                elements.append(song['audio-features']['tempo'])
-        
+                elements.append([song["titel"], round(song['audio-features']['tempo'])])
+
+    elif '-d' in argv or '--duration' in argv:
+        header = 'Song'
+        values = 'Duration'
+        countable_attribute = False
+        for row in data:
+            song = song_db[row[1]]
+            if 'audio-features' in song:
+                elements.append([song["titel"], round(song['audio-features']['duration_ms'])])
+
+       
         
     elif '--key' in argv:
         header = 'Key'
+        values = 'Occurences'
         for row in data:
             song = song_db[row[1]]
             if 'audio-features' in song:
@@ -86,7 +104,8 @@ def main(argv):
                 
         
     elif '--mode' in argv:
-        header = 'Tempo'
+        header = 'Mode'
+        values = 'Occurences'
         for row in data:
             song = song_db[row[1]]
             if 'audio-features' in song:
@@ -96,20 +115,38 @@ def main(argv):
         
 
     # Daten zählen
-    for el in elements:
-        containes_el = False
-        if results == []:
-            results.append([el, 1])
-            continue
-        for res in results:
-            if el == res[0]:
-                res[1] += 1
-                containes_el = True
-                break
-        if not containes_el:
-            results.append([el, 1])
+    
+    # Die Häufigkeit eines Elements wird gezählt
+    if countable_attribute:
+        for el in elements:
+            containes_el = False
+            if results == []:
+                results.append([el, 1])
+                continue
+            for res in results:
+                if el == res[0]:
+                    res[1] += 1
+                    containes_el = True
+                    break
+            if not containes_el:
+                results.append([el, 1])
+                
+    # Das Element hat bereits einen Wert nach dem es sich sortieren lässt, es werden nur Duplikate entfernt
+    else:
+        elements.sort()
+        for i in range(len(elements)-2, 0, -1):
+            if elements[i] == elements[i+1]:
+                elements.pop(i+1)
+        results = elements
+
+            
+            
+            
+
+        
 
     # Daten sortieren
+    
     if '-o' in argv or '--order' in argv:
         if '--reverse' in argv:
             results.sort(key=lambda res: (-res[1], res[0].lower()), reverse=True)
@@ -136,15 +173,26 @@ def main(argv):
     print('\nshowing', print_limit, 'results (specify with --<int> or --all)\n')
 
     # output results
-    print('{0:>30} | Plays'.format(header))
-    print('-'*40)
+    print('{0:>30} | {1}'.format(header, values))
+    print('-'*50)
     for i, res in enumerate(results):
         if i == print_limit:
             break
-        total = sum([res[1] for res in results])
         highest_value = max([res[1] for res in results])
-        print('{0:>30} | {1:<4} {2}'.format(
-            res[0] if len(res[0]) <= 30 else res[0][:27] + "…", res[1], '#' * int((res[1]*50)/highest_value)
+        print_value = res[1]
+
+        if values == "Duration":
+            milis = res[1]
+            secs = milis / 1000
+            mins = secs / 60
+            in_minutes = int(mins)
+            in_secs = str(int(secs) - 60 * in_minutes)
+            print_value = str(in_minutes) + " min " + (in_secs + " s" if in_secs else "")
+  
+        print('{0:>30} | {1:<10} {2}'.format(
+            res[0] if len(res[0]) <= 30 else res[0][:27]+ "…",
+            print_value,
+            '#' * int((res[1]*50)/highest_value)
             )
         )
 
