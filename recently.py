@@ -185,7 +185,7 @@ class RecentSongs():
                     song_database[track["id"]]["artist"] = artists["artists"]
                     print("Added for", song_database[track["id"]]['titel'])
                     
-                    track_ids = []
+                track_ids = []
                     
                 
         
@@ -204,7 +204,13 @@ class RecentSongs():
                 for search_id in database:
                     search_artist = database[search_id]["artist"]
                     if len(search_artist) == 1 and type(search_artist[0]) == dict:
+                        # name wurde gefunden
                         if artist[0] == search_artist[0]["name"]:
+                            print(artist[0], search_artist[0]["name"], song_id, search_id)
+                            database[song_id]["artist"] = search_artist
+                            break
+                        # artist id wurde gefunden
+                        elif artist[0] == search_artist[0]["id"]:
                             print(artist[0], search_artist[0]["name"], song_id, search_id)
                             database[song_id]["artist"] = search_artist
                             break
