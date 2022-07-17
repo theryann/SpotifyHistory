@@ -14,7 +14,7 @@ with open('history.csv', 'r') as fd:
         
 with open('song_database.json', 'r') as fd:
     song_db = json.load(fd)
-
+    print(len(song_db))
 
 def main(argv):
     countable_attribute = True  # should all occurences be counted and sorted by that (=True) OR False for atributes that are sortable by nature, i.e. song duration
@@ -36,7 +36,8 @@ def main(argv):
     if '-t' in argv or '--title' in argv:
         header = 'Song'
         for row in data:
-            elements.append(row[2])
+            #elements.append(row[2])
+            elements.append(song_db[row[1]]["titel"])
 
     elif '-r' in argv or '--record' in argv:
         header = 'Record'
@@ -192,7 +193,7 @@ def main(argv):
         print('{0:>30} | {1:<10} {2}'.format(
             res[0] if len(res[0]) <= 30 else res[0][:27]+ "…",
             print_value,
-            '#' * int((res[1]*50)/highest_value)
+            '=' * int((res[1]*50)/highest_value)
             )
         )
 
