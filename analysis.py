@@ -3,7 +3,7 @@
 import json
 import csv
 import sys
-from tkinter import EXCEPTION
+import re
 
 data = []
 
@@ -182,6 +182,7 @@ def main(argv):
         if i == print_limit:
             break
         highest_value = max([res[1] for res in results])
+        print_key   = res[0]
         print_value = res[1]
 
         if values == "Duration":
@@ -191,9 +192,18 @@ def main(argv):
             in_minutes = int(mins)
             in_secs = str(int(secs) - 60 * in_minutes)
             print_value = str(in_minutes) + " min " + (in_secs + " s" if in_secs else "")
+        
+        if header == 'Artist' and re.match("[0-9a-zA-Z]{22}", res[0]):
+            for song_id in song_db:
+                for artist in song_db[song_id]["artist"]:
+                    if type(artist) == dict:
+                        if res[0] == artist["id"]:
+                            print_key = artist["name"]
+                            break
+            
   
         print('{0:>30} | {1:<10} {2}'.format(
-            res[0] if len(res[0]) <= 30 else res[0][:27]+ "…",
+            print_key if len(print_key) <= 30 else print_key[:27]+ "…",
             print_value,
             '#' * int((res[1]*50)/highest_value)
             )
