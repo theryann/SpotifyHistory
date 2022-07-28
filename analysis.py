@@ -14,8 +14,6 @@ with open('history.csv', 'r') as fd:
         
 with open('song_database.json', 'r') as fd:
     song_db = json.load(fd)
-    print(len(song_db))
-
 
 def main(argv):
     countable_attribute = True  # should all occurences be counted and sorted by that (=True) OR False for atributes that are sortable by nature, i.e. song duration
@@ -99,8 +97,8 @@ def main(argv):
                 if '--mode' in argv:
                     modes = [' ', 'm']
                     key_of_song += modes[song['audio-features']['mode']]     
-                    
-                    while len(key_of_song) < 3: # damit alle gleich breit foramttiert werden
+
+                    while len(key_of_song) < 3: # damit alle gleich breit formatiert werden
                         key_of_song += ' ' 
                 
                 elements.append(key_of_song)
@@ -205,7 +203,7 @@ def main(argv):
         print('{0:>30} | {1:<10} {2}'.format(
             print_key if len(print_key) <= 30 else print_key[:27]+ "…",
             print_value,
-            '#' * int((res[1]*10)/highest_value)
+            '=' * int((res[1]*50)/highest_value)
             )
         )
 
