@@ -151,12 +151,12 @@ def main(argv):
     # Daten sortieren
     
     if '-o' in argv or '--order' in argv:
-        if '--reverse' in argv:
-            results.sort(key=lambda res: (-res[1], res[0].lower()), reverse=True)
-        else:
-            results.sort(key=lambda res: (-res[1], res[0].lower()))
+        results.sort(key=lambda res: res[0].lower())        # by alphabetical order
     else:
-        results.sort(key=lambda res: res[0].lower())
+        results.sort(key=lambda res: (-res[1], res[0].lower())) # by value
+    
+    if '--reverse' in argv:
+        results.reverse()
 
 
 
@@ -205,7 +205,7 @@ def main(argv):
         print('{0:>30} | {1:<10} {2}'.format(
             print_key if len(print_key) <= 30 else print_key[:27]+ "…",
             print_value,
-            '#' * int((res[1]*50)/highest_value)
+            '#' * int((res[1]*10)/highest_value)
             )
         )
 
