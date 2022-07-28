@@ -1,7 +1,8 @@
 import requests
-import time
 import json
 import csv
+import re
+
 from secrets import spotify_user_id
 from refresh import TokenRefresh
 
@@ -193,13 +194,47 @@ class RecentSongs():
         with open('song_database.json', 'w') as fd:
             json.dump(song_database, fd)
     
+    def update_history_with_similar_artist_name(self):
+        with open('song_database.json', 'r') as fd:
+            database = json.load(fd)
+            
+        history = []
+        with open('history.csv', 'r') as fd:
+            reader = csv.reader(fd)
+            for line in reader:
+                history.append(line)
+        
+        # replacing literal names with artist ID
+        for line in history:
+            found_artist = False
+            if not re.match("[0-9a-zA-Z]{22}", line[7]):
+                for song in database:
+                    if found_artist:
+                        print(artist_list)
+                        line[7] = ','.join(artist_list)
+                        break
+                    artist_list = line[7].split(',')
+                    for i in range(len(artist_list)):
+                        for artist in database[song]["artist"]:
+                            if artist["name"] == artist_list[i].strip():
+                                artist_list[i] = artist["id"]
+                                if i == len(artist_list) - 1:
+                                    found_artist = True
+
+        # writing changes to file              
+        with open('history.csv', 'w') as fd:
+            writer = csv.writer(fd, lineterminator="\n")
+            for line in history:
+                writer.writerow(line)
+            
+    
     def update_artists_with_similar_known_names(self):
         with open('song_database.json', 'r') as fd:
             database = json.load(fd) 
         
         for song_id in database:
             artist = database[song_id]["artist"]
-            if len(artist) == 1 and type(artist[0]) == str:
+            if type(artist[0]) == str:
 
                 for search_id in database:
                     search_artist = database[search_id]["artist"]
