@@ -210,16 +210,19 @@ class RecentSongs():
             if not re.match("[0-9a-zA-Z]{22}", line[7]):
                 for song in database:
                     if found_artist:
-                        print(artist_list)
                         line[7] = ','.join(artist_list)
                         break
                     artist_list = line[7].split(',')
                     for i in range(len(artist_list)):
                         for artist in database[song]["artist"]:
-                            if artist["name"] == artist_list[i].strip():
-                                artist_list[i] = artist["id"]
-                                if i == len(artist_list) - 1:
-                                    found_artist = True
+                            try:
+                                if artist["name"] == artist_list[i].strip():
+                                    artist_list[i] = artist["id"]
+                                    if i == len(artist_list) - 1:
+                                        found_artist = True
+                            except:
+                                print('failed for: ', artist)
+                                pass
 
         # writing changes to file              
         with open('history.csv', 'w') as fd:
