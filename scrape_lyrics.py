@@ -13,10 +13,13 @@ def retrieve_lyrics(artistname, songname):
         [' - ', '-'],
         [' ', '-'],
         ['\'', ''],
-        ['/' , ''],
+        ['/' , '-'],
         ['.',  ''],
+        ['(',  ''],
+        [')',  ''],
         [',',  ''],
         ['?',  ''],
+        ['!',  ''],
         ['ü', 'u'],
         ['ä', 'a'],
         ['ö', 'o']
@@ -75,10 +78,10 @@ if __name__ == "__main__":
             # enter in database
             song_db[song]["lyrics"] = res
             
-            if i % 15 == 0:
+            if i % 20 == 0:
                 time.sleep(10)
             else:            
-                time.sleep(3)
+                time.sleep(1)
             
     except KeyboardInterrupt:
         pass
