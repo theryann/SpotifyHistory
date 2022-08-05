@@ -1,16 +1,40 @@
+from bs4 import BeautifulSoup
 import requests
 import json
 import time
-from bs4 import BeautifulSoup
 
 def retrieve_lyrics(artistname, songname):
-    artistname = artistname.replace(' ', '-').replace('\'', '')
-    songname = songname.replace(' ', '-').replace('\'', '')
+    # prepare text for url
+    feat_index = songname.find('feat.') # removes (feat. xyz) from title
+    if  feat_index > 0:
+        songname = songname[:feat_index-1].strip()
     
+    switch = [
+        [' - ', '-'],
+        [' ', '-'],
+        ['\'', ''],
+        ['/' , ''],
+        ['.',  ''],
+        [',',  ''],
+        ['?',  ''],
+        ['ü', 'u'],
+        ['ä', 'a'],
+        ['ö', 'o']
+    ]
+    
+    for i in range(len(switch)):        # removes ceratin characters
+        artistname = artistname.lower().replace(switch[i][0], switch[i][1])
+        songname   = songname.lower().replace(switch[i][0], switch[i][1])    
+        
+    
+    # make request
     resp = requests.get(f'https://genius.com/{artistname}-{songname}-lyrics')
     
     if resp.status_code != 200:
-        print(resp.status_code, resp)
+        if resp.status_code == 404:
+            print(f'\t404: {artistname}-{songname}-lyrics')
+        else:
+            print('\t->', resp.status_code, resp)
         return
         
     soup_html = BeautifulSoup(resp.text, 'html.parser')
@@ -41,7 +65,7 @@ if __name__ == "__main__":
             artist_name = song_db[song]["artist"][0]["name"]
             song_name   = song_db[song]["titel"]
             
-            print(artist_name, song_name)
+            print(i, artist_name, song_name)
             res = retrieve_lyrics(artist_name, song_name)
             
             # case not a string response
@@ -54,7 +78,7 @@ if __name__ == "__main__":
             if i % 15 == 0:
                 time.sleep(10)
             else:            
-                time.sleep(2)
+                time.sleep(3)
             
     except KeyboardInterrupt:
         pass
