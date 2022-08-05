@@ -4,6 +4,9 @@ import time
 from bs4 import BeautifulSoup
 
 def retrieve_lyrics(artistname, songname):
+    artistname = artistname.replace(' ', '-').replace('\'', '')
+    songname = songname.replace(' ', '-').replace('\'', '')
+    
     resp = requests.get(f'https://genius.com/{artistname}-{songname}-lyrics')
     
     if resp.status_code != 200:
@@ -29,14 +32,14 @@ if __name__ == "__main__":
     
     
     try:    
-        for song in song_db:
+        for i, song in enumerate(song_db):
             # abort if lyrics are known
             if 'lyrics' in song_db[song]:
                 continue          
 
             # retrieve lyrics
-            artist_name = song_db[song]["artist"][0]["name"].replace(' ','-')
-            song_name   = song_db[song]["titel"].replace(' ', '-') 
+            artist_name = song_db[song]["artist"][0]["name"]
+            song_name   = song_db[song]["titel"]
             
             print(artist_name, song_name)
             res = retrieve_lyrics(artist_name, song_name)
@@ -48,7 +51,10 @@ if __name__ == "__main__":
             # enter in database
             song_db[song]["lyrics"] = res
             
-            time.sleep(2)
+            if i % 15 == 0:
+                time.sleep(10)
+            else:            
+                time.sleep(2)
             
     except KeyboardInterrupt:
         pass
