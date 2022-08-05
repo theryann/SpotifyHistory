@@ -119,7 +119,7 @@ def main(argv):
         for song in song_db:
             if "lyrics" in song_db[song]:
                 for word in song_db[song]["lyrics"].replace("\n", ' ').split(" "):
-                    word = word.lower().strip("!?,.()")
+                    word = word.lower().strip("!?,.()'")
                     elements.append(word)
     
         
