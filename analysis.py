@@ -25,7 +25,7 @@ def main(argv):
     print_limit = 20
 
     for arg in argv:
-        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit', '-a', '-d', '--duration','--tempo', '--artist','-g', '--genre','--mode','--tempo','--key', '-o', '--order', '-c', '-count', '--reverse', '--all']:
+        if arg not in ['-t', '--title', '-r', '--record', '--sum','-e', '--explicit','--words', '-w', '-a', '-d', '--duration','--tempo', '--artist','-g', '--genre','--mode','--tempo','--key', '-o', '--order', '-c', '-count', '--reverse', '--all']:
             if not arg.strip('-').isdigit():
                 print(arg, 'is not a known argument. Check for "-" and "--" errors.')
                 quit()
@@ -112,7 +112,16 @@ def main(argv):
             if 'audio-features' in song:
                 modes = ['Minor', 'Major']
                 elements.append(modes[song['audio-features']['mode']])
-        
+
+    elif '-w' in argv or '--words' in argv:
+        header = 'Words'
+        values = 'Occurences'
+        for song in song_db:
+            if "lyrics" in song_db[song]:
+                for word in song_db[song]["lyrics"].replace("\n", ' ').split(" "):
+                    word = word.lower().strip("!?,.()'")
+                    elements.append(word)
+    
         
 
     # Daten zählen
