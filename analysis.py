@@ -8,7 +8,8 @@ data = []
 with open('history.csv', 'r') as fd:
     reader = csv.reader(fd)
     for line in reader:
-        data.append(line)
+        if 'Kapitel' not in ', '.join(line):
+            data.append(line)
 
 
 def main(argv):
@@ -85,7 +86,7 @@ def main(argv):
             break
         elif arg == '--all':
             print_limit = len(results)
-    print('\nshowing', print_limit, 'results (specify with --int or --all)\n')
+    print('\nshowing', print_limit, 'results (specify with --<int> or --all)\n')
 
     # output results
     print('{0:>30} | Results'.format(header))
