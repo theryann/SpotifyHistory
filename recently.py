@@ -352,9 +352,8 @@ if __name__ == "__main__":
 
     print('Find new Songs')
     songs = RecentSongs()
-    # songs.find_songs()
-    # songs.save_songs_to_list()
-    # songs.upd
+    songs.find_songs()
+    songs.save_songs_to_list()
 
     
 
