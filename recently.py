@@ -130,12 +130,14 @@ class RecentSongs():
                 # bad response handeling:
                 if not "audio_features" in result:
                     print('ERROR:', result)
+                    #continue
                     break
                 
                 # append succesful response to database
                 for track in result["audio_features"]:
-                    id = track["id"]
-                    database[id]["audio-features"] = track
+                    if track != None:
+                        id = track["id"]
+                        database[id]["audio-features"] = track
                     
                 track_ids = []
                 
