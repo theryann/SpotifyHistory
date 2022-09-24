@@ -1,7 +1,8 @@
 __pycache__/
+.vs/
 secrets.py
 history.csv
 initial_api_tokens.py
 *.json
 *.txt
-
+*.bat
