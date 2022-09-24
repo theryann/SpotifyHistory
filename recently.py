@@ -41,7 +41,7 @@ class RecentSongs():
        
         # create list with songs that are already contained to avoid dublicates
         contained_songs = []
-        with open('history.csv', 'r') as history_csv:
+        with open('history.csv', 'r', encoding='utf-8') as history_csv:
             reader = csv.reader(history_csv)
             for line in reader:
                 contained_songs.append(line[0])
@@ -83,7 +83,7 @@ class RecentSongs():
         with open('song_database.json', 'r') as fd:
             database = json.load(fd)
         
-        with open('history.csv', 'r') as fd:
+        with open('history.csv', 'r', encoding='utf-8') as fd:
             reader = csv.reader(fd)
             for line in reader:
                 if line[1] not in database:
@@ -150,7 +150,7 @@ class RecentSongs():
             json.dump(database, fd)
             
     def update_song_database_with_artists(self):
-        with open('song_database.json', 'r') as fd:
+        with open('song_database.json', 'r', encoding='utf-8') as fd:
             song_database = json.load(fd)
         
         number_of_requests = 0
