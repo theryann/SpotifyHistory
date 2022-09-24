@@ -83,7 +83,7 @@ if __name__ == "__main__":
             else:            
                 time.sleep(1)
             
-    except KeyboardInterrupt:
+    except:
         pass
         
     with open('song_database.json', 'w') as fd:
