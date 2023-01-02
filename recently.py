@@ -130,12 +130,14 @@ class RecentSongs():
                 # bad response handeling:
                 if not "audio_features" in result:
                     print('ERROR:', result)
+                    #continue
                     break
                 
                 # append succesful response to database
                 for track in result["audio_features"]:
-                    id = track["id"]
-                    database[id]["audio-features"] = track
+                    if track != None:
+                        id = track["id"]
+                        database[id]["audio-features"] = track
                     
                 track_ids = []
                 
@@ -352,9 +354,8 @@ if __name__ == "__main__":
 
     print('Find new Songs')
     songs = RecentSongs()
-    # songs.find_songs()
-    # songs.save_songs_to_list()
-    # songs.upd
+    songs.find_songs()
+    songs.save_songs_to_list()
 
     
 
