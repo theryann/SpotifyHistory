@@ -6,3 +6,5 @@ initial_api_tokens.py
 *.json
 *.txt
 *.bat
+*.db
+
