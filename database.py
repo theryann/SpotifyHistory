@@ -77,7 +77,7 @@ class Database:
             self.cursor.execute(sql)
             self.connection.commit()
         except sqlite3.IntegrityError:
-            # print("row or primary key already exist")
+            print("row or primary key already exist")
             pass
         except Exception as e:
             print("ERROR:", e)

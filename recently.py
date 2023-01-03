@@ -5,7 +5,7 @@ import re
 
 from secrets import spotify_user_id
 from refresh import TokenRefresh
-from database import database
+from database import Database
 
 
 class RecentSongs:
@@ -362,6 +362,9 @@ class FetchSongs:
 
         Refresh = TokenRefresh()    
         self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
+        
+        self.db = Database("develop.db")
+
 
     def find_songs(self):
         """ [REQUEST] make GET request to API and save JSON into self.response_json variable and optional as recent.json file"""
@@ -383,54 +386,100 @@ class FetchSongs:
         with open('recent.json', 'w') as fd:
             json.dump(self.response_json, fd)
 
-    def save_songs_to_list(self):
-        """ [OFFLINE] parse data from JSON and write to CSV """
-       
-        # create list with songs that are already contained to avoid dublicates
-        contained_songs = []
-        with open('history.csv', 'r', encoding='utf-8') as history_csv:
-            reader = csv.reader(history_csv)
-            for line in reader:
-                contained_songs.append(line[0])
+    def add_recent_songs(self):
+        """ [OFFLINE] parse data from JSON and write to SQLite Databse
+        saves some initial stream, song, artist and album data. 
+        further infos need to be fetched later on
+        """
 
-        # open file to append songs
-        with open('history.csv', 'a') as history_csv:
-            writer = csv.writer(history_csv, lineterminator='\n')
+        for song in self.response_json['items']:
+            ### parse Data from JSON ###
+            # stream info
+            played_at   = song['played_at']
+            
+            # song info
+            song_id     = song['track']['id']
+            song_name   = song['track']['name']
+            duration_ms = song['track']['duration_ms']
+            popularity  = song['track']['popularity']
+            is_explicit = int(song['track']['explicit']) # bool as int because sqlite doesnt support bools
+            
+            # album info
+            album_name   = song['track']['album']['name']
+            album_id     = song['track']['album']['id']
+            album_img    = song['track']['album']['images'][0]["url"]
+            album_type   = song['track']['album']['album_type']
+            total_tracks = song['track']['album']['total_tracks']
+            album_release_date = song['track']['album']['release_date']
+           
+           # artist info
+            song_artists    = song['track']['artists']  # LIST of all artists that made this song
+            album_artist_id = song['track']['album']['artists'][0]['id']  # PRIMARY artist who made this album
+            
+            ### insert data in databse ###
+            # enter stream infos
+            self.db.insert_row(
+                table = "Stream",
+                row = {
+                    "timeStamp" : played_at,
+                    "songID" : song_id
+                }
+            )
+            
+            # enter song infos
+            self.db.insert_row(
+                table = "Song",
+                row = {
+                    "ID" : song_id,
+                    "title" : song_name,
+                    "duration" : duration_ms,
+                    "popularity" : popularity,
+                    "explicit" : is_explicit
+                }
+            )
+            
+            # enter album infos
+            self.db.insert_row(
+                table = "Album",
+                row = {
+                    "ID" : album_id,
+                    "artistID" : album_artist_id,
+                    "name" : album_name,
+                    "releaseDate" : album_release_date,
+                    "totalTracks" : total_tracks,
+                    "type" : album_type,
+                    "img" : album_img
+                }
+            )
+            
+            # enter artist infos
+            for artist in song_artists:
+                # artist info
+                self.db.insert_row(
+                    table = "Artist",
+                    row = {
+                        "ID" : artist["id"],
+                        "name" : artist["name"]
+                    }
+                )
+                # song written by assotiation
+                self.db.insert_row(
+                    table = "writtenBy",
+                    row = {
+                        "songID" : song_id,
+                        "artistID" : artist["id"]
+                    }
+                )
 
-            # parse Data from JSON
-            for song in self.response_json['items']:
-                song_id     = song['track']['id']
-                song_name   = song['track']['name']
-                album       = song['track']['album']['name']
-                played_at   = song['played_at']
-                duration_ms = song['track']['duration_ms']
-                popularity  = song['track']['popularity']
-                is_explicit = song['track']['explicit']
-                artist      = song['track']['artists'][0]['id']
-
-
-                # add artists if more than one credited 
-                if len(song['track']['artists']) > 1:
-                    for art in song['track']['artists']:
-                        if song['track']['artists'][0] == art:
-                            continue
-                        artist += ',' + art['id']
-
-                # write Data to CSV (history.csv)
-                row = [played_at, song_id, song_name, duration_ms, album, popularity, is_explicit, artist]
-                
-                if played_at in contained_songs:
-                    continue
-                writer.writerow(row)
 
 
 
 if __name__ == "__main__":
 
     print('Find new Songs')
-    songs = RecentSongs()
+    songs = FetchSongs()
     songs.find_songs()
-    songs.save_songs_to_list()
+    songs.add_recent_songs()
 
     
 

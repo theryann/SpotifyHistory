@@ -7,4 +7,5 @@ initial_api_tokens.py
 *.txt
 *.bat
 *.db
+*.db-journal
 
