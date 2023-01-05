@@ -3,6 +3,8 @@ import sqlite3
 class Database:
     def __init__(self, path, root=False):
         self.connection = sqlite3.connect(path)
+        self.connection.row_factory = sqlite3.Row
+        
         self.cursor = self.connection.cursor()
         self.root = root
         
@@ -77,12 +79,12 @@ class Database:
             self.cursor.execute(sql)
             self.connection.commit()
         except sqlite3.IntegrityError:
-            print("row or primary key already exist")
+            # print("row or primary key already exist")
             pass
         except Exception as e:
             print("ERROR:", e)
             
-    def update_cell(self, table, column, p_keys: dict, new_value) -> None:
+    def update_cell(self, table, column, primary_keys: dict, new_value) -> None:
         '''
         update at specific cell,
         specified by column and (multiple) primary keys
@@ -90,12 +92,12 @@ class Database:
         # specify rows by primary key(s). (where condition)
         condition = ' and '.join([
             f'{row} = {self.stringify(value)}'
-            for row, value in p_keys.items()
+            for row, value in primary_keys.items()
         ])
         
         sql = f"""
         update {table}
-        set {column} = {new_value}
+        set {column} = {self.stringify(new_value, preserve_int=True)}
         where {condition};
         """
         try:
@@ -104,6 +106,15 @@ class Database:
         except Exception as e:
             print("ERROR:", e)
         
+    def get_all(self, sql_query) -> dict:
+        """
+        fetch all rows of sql query
+        :param sql_query: string that contains query
+        :return: dict with rows
+        """
+        self.cursor.execute(sql_query)
+        json = [ dict(row) for row in self.cursor.fetchall() ]
+        return json
 
 if __name__ == "__main__":
     pass
