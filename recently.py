@@ -386,7 +386,7 @@ class FetchSongs:
         with open('recent.json', 'w') as fd:
             json.dump(self.response_json, fd)
 
-    def add_recent_songs(self):
+    def recent_songs_to_databse(self):
         """ [OFFLINE] parse data from JSON and write to SQLite Databse
         saves some initial stream, song, artist and album data. 
         further infos need to be fetched later on
@@ -395,14 +395,15 @@ class FetchSongs:
         for song in self.response_json['items']:
             ### parse Data from JSON ###
             # stream info
-            played_at   = song['played_at']
+            played_at = song['played_at']
             
             # song info
-            song_id     = song['track']['id']
-            song_name   = song['track']['name']
-            duration_ms = song['track']['duration_ms']
-            popularity  = song['track']['popularity']
-            is_explicit = int(song['track']['explicit']) # bool as int because sqlite doesnt support bools
+            song_id      = song['track']['id']
+            song_name    = song['track']['name']
+            duration_ms  = song['track']['duration_ms']
+            popularity   = song['track']['popularity']
+            track_number = song['track']['track_number']
+            is_explicit  = int(song['track']['explicit']) # bool as int because sqlite doesnt support bools
             
             # album info
             album_name   = song['track']['album']['name']
@@ -434,7 +435,8 @@ class FetchSongs:
                     "title" : song_name,
                     "duration" : duration_ms,
                     "popularity" : popularity,
-                    "explicit" : is_explicit
+                    "explicit" : is_explicit,
+                    "trackNumber" : track_number
                 }
             )
             
@@ -471,7 +473,69 @@ class FetchSongs:
                     }
                 )
 
+    def add_album_info(self, song_number=50):
+        print("add album info...")
+        
+        # get songs with trackNumber is NULL. These songs dont have an album associated with them
+        rows = self.db.get_all(
+            f"""select * from Song where trackNumber IS NULL or albumID IS NULL limit {song_number}"""
+        )
+        
+        # spotify API request for multiple tracks
+        song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
+        query = f'https://api.spotify.com/v1/tracks?ids={song_ids}'
 
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        ).json()
+        
+        # enter album data
+        for song in response["tracks"]: 
+            track_number = song['track_number']
+            song_id      = song['id']
+            
+            # parse album info
+            album_name   = song['album']['name']
+            album_id     = song['album']['id']
+            album_img    = song['album']['images'][0]["url"]
+            album_type   = song['album']['album_type']
+            total_tracks = song['album']['total_tracks']
+            album_artist_id = song['album']['artists'][0]['id']  # PRIMARY artist who made this album
+            album_release_date = song['album']['release_date']
+            
+            # enter album infos in database
+            self.db.insert_row(
+                table = "Album",
+                row = {
+                    "ID" : album_id,
+                    "artistID" : album_artist_id,
+                    "name" : album_name,
+                    "releaseDate" : album_release_date,
+                    "totalTracks" : total_tracks,
+                    "type" : album_type,
+                    "img" : album_img
+                }
+            )
+            
+            # enter track number and album of song to database
+            self.db.update_cell(
+                table = "Song",
+                column = "trackNumber",
+                primary_keys = {"ID" : song_id},
+                new_value = track_number
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "albumID",
+                primary_keys = { "ID" : song_id },
+                new_value = album_id
+            )
+            
+     
 
 
 if __name__ == "__main__":
@@ -479,7 +543,8 @@ if __name__ == "__main__":
     print('Find new Songs')
     songs = FetchSongs()
     songs.find_songs()
-    songs.add_recent_songs()
+    songs.recent_songs_to_databse()
+    songs.add_album_info()
 
     
 
