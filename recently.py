@@ -3,6 +3,8 @@ import json
 import csv
 import re
 
+from scrape_lyrics import retrieve_lyrics
+
 from secrets import spotify_user_id
 from refresh import TokenRefresh
 from database import Database
@@ -352,9 +354,7 @@ class RecentSongs:
         return response.json()
         
 class FetchSongs:
-    """
-    class SQLite Database support. Someday a parentclass for both should be useful
-    """
+    """ class SQLite Database support. Someday a parentclass for both should be useful """
 
     def __init__(self):
         self.user_id = spotify_user_id
@@ -603,7 +603,41 @@ class FetchSongs:
                 new_value = energy
             )
             
+    def add_lyrics(self, song_number=30):       
+        print("add lyrics info...")
+        
+        # get songs with trackNumber is NULL. These songs dont have an album associated with them
+        rows = self.db.get_all(
+            f"""
+            select Song.ID, Song.title, Artist.name, Song.lyrics
+            from Song
+            join writtenBy on Song.ID = writtenBy.songID
+            join Artist on writtenBy.artistID = Artist.ID 
+            where Song.lyrics is null
+            limit {song_number}
+            """
+        )
+        
+        used_ids = []
+        for song in rows:
+            # the sql query lists song multible times of each assiociated artist.
+            # This is hard to prevent in sql thus the used ids list
+            if song["ID"] in used_ids:
+                continue
+            lyrics = retrieve_lyrics(
+                artistname=song["name"], 
+                songname=song["title"] 
+            )
             
+            if lyrics is not None:
+                self.db.update_cell(
+                    table = "Song",
+                    column = "lyrics",
+                    primary_keys = { "ID" : song["ID"] },
+                    new_value = lyrics
+                )
+            
+            used_ids.append(song["ID"])
             
         
         
@@ -611,10 +645,11 @@ class FetchSongs:
   
 if __name__ == "__main__":
     songs = FetchSongs()
-    songs.find_songs()
-    songs.recent_songs_to_database()
-    songs.add_album_info()
-    songs.add_audio_features()
+    # songs.find_songs()
+    # songs.recent_songs_to_database()
+    # songs.add_album_info()
+    # songs.add_audio_features()
+    songs.add_lyrics()
 
     
 

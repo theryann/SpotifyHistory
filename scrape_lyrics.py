@@ -37,6 +37,7 @@ def retrieve_lyrics(artistname, songname):
         if resp.status_code == 404:
             print(f'\t404: {artistname}-{songname}-lyrics')
         else:
+            # print(f'{artistname}-{songname}-lyrics')
             print('\t->', resp.status_code, resp)
         return
         
@@ -45,11 +46,15 @@ def retrieve_lyrics(artistname, songname):
     
     if lyrics:
         lines_list = lyrics.get_text(separator="\n").splitlines()
-        for i in range(len(lines_list)-1, -1, -1):
+        for i in range(len(lines_list)-1, -1, -1):      # iterate backwards to pop all unwanted lines 
             if '[' in lines_list[i].lower():
+                lines_list.pop(i)
+            elif lines_list[i] in [ ['['], [']'], ['('], [')'] ]:
                 lines_list.pop(i)
 
         return '\n'.join(lines_list)
+    
+    return None
                 
                 
                 
