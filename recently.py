@@ -365,7 +365,6 @@ class FetchSongs:
         
         self.db = Database("develop.db")
 
-
     def find_songs(self):
         """ [REQUEST] make GET request to API and save JSON into self.response_json variable and optional as recent.json file"""
 
@@ -386,11 +385,12 @@ class FetchSongs:
         with open('recent.json', 'w') as fd:
             json.dump(self.response_json, fd)
 
-    def recent_songs_to_databse(self):
+    def recent_songs_to_database(self):
         """ [OFFLINE] parse data from JSON and write to SQLite Databse
         saves some initial stream, song, artist and album data. 
         further infos need to be fetched later on
         """
+        print("add recently played songs to database...")
 
         for song in self.response_json['items']:
             ### parse Data from JSON ###
@@ -525,7 +525,7 @@ class FetchSongs:
             self.db.update_cell(
                 table = "Song",
                 column = "trackNumber",
-                primary_keys = {"ID" : song_id},
+                primary_keys = { "ID" : song_id },
                 new_value = track_number
             )
             self.db.update_cell(
@@ -534,17 +534,87 @@ class FetchSongs:
                 primary_keys = { "ID" : song_id },
                 new_value = album_id
             )
+
+    def add_audio_features(self, song_number=50):
+        print("add audio features...")
+        # get songs with key is NULL. These songs propably don't have the other audio features as well
+        rows = self.db.get_all(
+            f"""select * from Song where key IS NULL limit {song_number}"""
+        )
+        
+        # Spotify API Call
+        song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
+        query = f'https://api.spotify.com/v1/audio-features?ids={song_ids}'
+
+        response = requests.get(
+            query,
+            headers = {
+                "Content-Type" : "application/json",
+                "Authorization": "Bearer {}".format(self.spotify_token)
+            }
+        ).json()
+        
+        for song in response["audio_features"]: 
+            # parse audio features
+            song_id        = song["id"]
+            key            = song["key"]
+            time_signature  = song["time_signature"]
+            mode           = song["mode"]
+            loudness       = song["loudness"]
+            tempo          = song["tempo"]
+            energy         = song["energy"]
             
-     
+            # insert data in table
+            self.db.update_cell(
+                table = "Song",
+                column = "key",
+                primary_keys = { "ID" : song_id },
+                new_value = key
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "timeSignature",
+                primary_keys = { "ID" : song_id },
+                new_value = time_signature
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "mode",
+                primary_keys = { "ID" : song_id },
+                new_value = mode
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "loudness",
+                primary_keys = { "ID" : song_id },
+                new_value = loudness
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "tempo",
+                primary_keys = { "ID" : song_id },
+                new_value = tempo
+            )
+            
+            self.db.update_cell(
+                table = "Song",
+                column = "energy",
+                primary_keys = { "ID" : song_id },
+                new_value = energy
+            )
+            
+            
+            
+        
+        
 
-
+  
 if __name__ == "__main__":
-
-    print('Find new Songs')
     songs = FetchSongs()
     songs.find_songs()
-    songs.recent_songs_to_databse()
+    songs.recent_songs_to_database()
     songs.add_album_info()
+    songs.add_audio_features()
 
     
 
