@@ -81,6 +81,9 @@ class Database:
         except sqlite3.IntegrityError:
             # print("row or primary key already exist")
             pass
+        except sqlite3.OperationalError as e:
+            print("[Operational Error]", e)
+            quit()
         except Exception as e:
             print("ERROR:", e)
             
