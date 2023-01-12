@@ -537,7 +537,7 @@ class FetchSongs:
         
         # Spotify API call
         artist_ids = ','.join([artist["ID"] for artist in rows]) # string of artist IDS
-        query = f'https://api.spotify.com/v1/artists/ids={artist_ids}'
+        query = f'https://api.spotify.com/v1/artists?ids={artist_ids}'
 
         response = requests.get(
             query,
@@ -546,12 +546,11 @@ class FetchSongs:
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         ).json()
-
+        
         
         for artist in response["artists"]:
             # parse artist info
             artist_id: str  = artist["id"]
-            name: str       = artist["name"]
             genres: list    = artist["genres"]
             images: list    = artist["images"]
             popularity: int = artist["popularity"]
@@ -560,20 +559,20 @@ class FetchSongs:
             self.db.update_cell(
                 table = "Artist",
                 column = "popularity",
-                primary_keys = { "ID", artist_id },
+                primary_keys = { "ID": artist_id },
                 new_value = popularity
             )                
             self.db.update_cell(
                 table = "Artist",
                 column = "imgBig",
-                primary_keys = { "ID", artist_id },
-                new_value = images[0]
+                primary_keys = { "ID": artist_id },
+                new_value = images[0]["url"]
             )
             self.db.update_cell(
                 table = "Artist",
                 column = "imgSmall",
-                primary_keys = { "ID", artist_id },
-                new_value = images[-1]
+                primary_keys = { "ID": artist_id },
+                new_value = images[-1]["url"]
             )
             
             for genre in genres:
@@ -704,12 +703,11 @@ class FetchSongs:
   
 if __name__ == "__main__":
     songs = FetchSongs()
-    songs.find_songs()
     songs.recent_songs_to_database()
     songs.add_album_info()
     songs.add_artist_info()
     songs.add_audio_features()
-    # songs.add_lyrics()
+    songs.add_lyrics()
 
     
 
