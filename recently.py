@@ -1,7 +1,4 @@
 import requests
-import json
-import csv
-import re
 
 from scrape_lyrics import retrieve_lyrics
 
