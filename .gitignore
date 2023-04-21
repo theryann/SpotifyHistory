@@ -1,6 +1,6 @@
 __pycache__/
 .vs/
-secrets.py
+credentials.py
 history.csv
 initial_api_tokens.py
 *.json

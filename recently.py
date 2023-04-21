@@ -5,7 +5,7 @@ import re
 
 from scrape_lyrics import retrieve_lyrics
 
-from secrets import spotify_user_id
+from credentials import spotify_user_id
 from refresh import TokenRefresh
 from database import Database
 
@@ -19,7 +19,7 @@ class RecentSongs:
         self.user_id = spotify_user_id
         self.response_json = None
 
-        Refresh = TokenRefresh()    
+        Refresh = TokenRefresh()
         self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
 
     def find_songs(self):
@@ -44,7 +44,7 @@ class RecentSongs:
 
     def save_songs_to_list(self):
         """ [OFFLINE] parse data from JSON and write to CSV """
-       
+
         # create list with songs that are already contained to avoid dublicates
         contained_songs = []
         with open('history.csv', 'r', encoding='utf-8') as history_csv:
@@ -68,7 +68,7 @@ class RecentSongs:
                 artist      = song['track']['artists'][0]['id']
 
 
-                # add artists if more than one credited 
+                # add artists if more than one credited
                 if len(song['track']['artists']) > 1:
                     for art in song['track']['artists']:
                         if song['track']['artists'][0] == art:
@@ -77,7 +77,7 @@ class RecentSongs:
 
                 # write Data to CSV (history.csv)
                 row = [played_at, song_id, song_name, duration_ms, album, popularity, is_explicit, artist]
-                
+
                 if played_at in contained_songs:
                     continue
                 writer.writerow(row)
@@ -85,10 +85,10 @@ class RecentSongs:
 
     def update_song_database_with_history_data(self):
         """ [OFFLINE] goes through the csv file and wirtes all songs that appear for the first time in the database.json """
-        
+
         with open('song_database.json', 'r') as fd:
             database = json.load(fd)
-        
+
         with open('history.csv', 'r', encoding='utf-8') as fd:
             reader = csv.reader(fd)
             for line in reader:
@@ -101,117 +101,117 @@ class RecentSongs:
                         "is_explicit" : line[6],
                         "artist"      : [],
                         "genre"       : []
-                    }                    
-                    
+                    }
+
                     for artist in line[7].split(','):
-                        song_attributes["artist"].append(artist.strip())                    
-                        
+                        song_attributes["artist"].append(artist.strip())
+
                     database[line[1]] = song_attributes
-                    
+
         with open('song_database.json', 'w') as fd:
             json.dump(database, fd)
-         
+
     def update_song_database_with_audio_features(self):
         with open('song_database.json', 'r') as fd:
             database = json.load(fd)
-            
+
         track_ids = []
-        
+
         number_of_requests = 0
-        
+
         for i, song_id in enumerate(database):
-            
+
             # filling 10 new track id list
             if len(track_ids) < 10:
                 if "audio-features" not in database[song_id]:
                     track_ids.append(song_id)
-                    
+
             # making bulk request for all IDs
-            else: 
+            else:
                 ids_string = ','.join(track_ids)
-                        
+
                 result = self.get_multiple_audio_features(ids_string)
-                number_of_requests += 1                
-                
+                number_of_requests += 1
+
                 # bad response handeling:
                 if not "audio_features" in result:
                     print('ERROR:', result)
                     #continue
                     break
-                
+
                 # append succesful response to database
                 for track in result["audio_features"]:
                     if track != None:
                         id = track["id"]
                         database[id]["audio-features"] = track
-                    
+
                 track_ids = []
-                
+
                 if number_of_requests == 5:
                     break
 
-        
-        # write updated database to JSON            
+
+        # write updated database to JSON
         with open('song_database.json', 'w') as fd:
             json.dump(database, fd)
-            
+
     def update_song_database_with_artists(self):
         with open('song_database.json', 'r', encoding='utf-8') as fd:
             song_database = json.load(fd)
-        
+
         number_of_requests = 0
-        
+
         track_ids = []
-        
+
         for song_id in song_database:
-            
+
             if number_of_requests > 50:
                 print('\n50 Requests done')
                 break
-            
+
             if len(track_ids) < 10:
                 if type(song_database[song_id]["artist"][0]) is not dict:
                     track_ids.append(song_id)
-                    
+
             else:
                 songs = self.get_multiple_tracks(','.join(track_ids))
                 number_of_requests += 1
-                
+
                 if not "tracks" in songs:
                     print('[ ERROR ]', songs)
                     break
-                
+
                 for track in songs["tracks"]:
-                    artist_ids_string = ','.join(artist["id"] for artist in track["artists"]) 
-                    
+                    artist_ids_string = ','.join(artist["id"] for artist in track["artists"])
+
                     artists = self.get_multiple_artists(artist_ids_string)
                     number_of_requests += 1
-                    
+
                     if not "artists" in artists:
                         print('[ ERROR ]', songs)
                         break
-                    
+
                     song_database[track["id"]]["artist"] = artists["artists"]
                     print("Added for", song_database[track["id"]]['titel'])
-                    
+
                 track_ids = []
-                    
-                
-        
-        # write updated database to JSON            
+
+
+
+        # write updated database to JSON
         with open('song_database.json', 'w') as fd:
             json.dump(song_database, fd)
-    
+
     def update_history_with_similar_artist_name(self):
         with open('song_database.json', 'r') as fd:
             database = json.load(fd)
-            
+
         history = []
         with open('history.csv', 'r') as fd:
             reader = csv.reader(fd)
             for line in reader:
                 history.append(line)
-        
+
         # replacing literal names with artist ID
         for line in history:
             found_artist = False
@@ -232,17 +232,17 @@ class RecentSongs:
                                 print('failed for: ', artist)
                                 pass
 
-        # writing changes to file              
+        # writing changes to file
         with open('history.csv', 'w') as fd:
             writer = csv.writer(fd, lineterminator="\n")
             for line in history:
                 writer.writerow(line)
-            
-    
+
+
     def update_artists_with_similar_known_names(self):
         with open('song_database.json', 'r') as fd:
-            database = json.load(fd) 
-        
+            database = json.load(fd)
+
         for song_id in database:
             artist = database[song_id]["artist"]
             if type(artist[0]) == str:
@@ -262,13 +262,13 @@ class RecentSongs:
                             break
 
         with open('song_database.json', 'w') as fd:
-            json.dump(database, fd) 
-                        
+            json.dump(database, fd)
+
     def get_audio_features(self, id):
         """ [REQUEST] param: id,
             makes GET request and returns audio features of ONE Track
-        """        
-        
+        """
+
         query = f'https://api.spotify.com/v1/audio-features/{id}'
 
         response = requests.get(
@@ -280,12 +280,12 @@ class RecentSongs:
         )
 
         return response.json()
-        
+
     def get_multiple_audio_features(self, ids):
         """ [REQUEST] param: ids, comma seperated,
             makes GET request and returns audio features of MULTIPLE Tracks
-        """ 
-        
+        """
+
         query = f'https://api.spotify.com/v1/audio-features?ids={ids}'
 
         response = requests.get(
@@ -298,12 +298,12 @@ class RecentSongs:
         print('[ REQUEST ] multiple audio features')
 
         return response.json()
-        
+
     def get_multiple_tracks(self, ids):
         """ [REQUEST] param: ids, comma seperated,
             makes GET request and returns MULTIPLE Tracks
-        """ 
-        
+        """
+
         query = f'https://api.spotify.com/v1/tracks?ids={ids}'
 
         response = requests.get(
@@ -316,12 +316,12 @@ class RecentSongs:
         print('[ REQUEST ] multiple artists features')
 
         return response.json()
-    
+
     def get_multiple_artists(self, ids):
         """ [REQUEST] param: ids, comma seperated,
             makes GET request and returns artists of MULTIPLE Tracks
-        """ 
-        
+        """
+
         query = f'https://api.spotify.com/v1/artists?ids={ids}'
 
         response = requests.get(
@@ -334,12 +334,12 @@ class RecentSongs:
         print('[ REQUEST ] multiple artists features', ids)
 
         return response.json()
-    
+
     def get_artists(self, id):
         """ [REQUEST] param: ids, comma seperated,
             makes GET request and returns artists of MULTIPLE Tracks
-        """ 
-        
+        """
+
         query = f'https://api.spotify.com/v1/artists/id={id}'
 
         response = requests.get(
@@ -352,7 +352,7 @@ class RecentSongs:
         print('[ REQUEST ] multiple artists features')
 
         return response.json()
-        
+
 class FetchSongs:
     """ class SQLite Database support. Someday a parentclass for both should be useful """
 
@@ -360,11 +360,10 @@ class FetchSongs:
         self.user_id = spotify_user_id
         self.response_json = None
 
-        Refresh = TokenRefresh()    
+        Refresh = TokenRefresh()
         self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
-        
-        self.db = Database("develop.db")
 
+        self.db = Database("develop.db")
 
     def recent_songs_to_database(self, song_number=50):
         print("add recently played songs to database...")
@@ -373,8 +372,8 @@ class FetchSongs:
         response = requests.get(
             query,
             headers = {
-                "Content-Type" : "application/json",
-                "Authorization": "Bearer {}".format(self.spotify_token)
+                "Content-Type" :  "application/json",
+                "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
 
@@ -382,7 +381,7 @@ class FetchSongs:
             ### parse Data from JSON ###
             # stream info
             played_at = song['played_at']
-            
+
             # song info
             song_id      = song['track']['id']
             song_name    = song['track']['name']
@@ -390,19 +389,20 @@ class FetchSongs:
             popularity   = song['track']['popularity']
             track_number = song['track']['track_number']
             is_explicit  = int(song['track']['explicit']) # bool as int because sqlite doesnt support bools
-            
+
             # album info
-            album_name   = song['track']['album']['name']
-            album_id     = song['track']['album']['id']
-            album_img    = song['track']['album']['images'][0]["url"]
-            album_type   = song['track']['album']['album_type']
-            total_tracks = song['track']['album']['total_tracks']
+            album_name     = song['track']['album']['name']
+            album_id       = song['track']['album']['id']
+            album_imgBig   = song['track']['album']['images'][0]["url"]
+            album_imgSmall = song['track']['album']['images'][-1]["url"]
+            album_type     = song['track']['album']['album_type']
+            total_tracks   = song['track']['album']['total_tracks']
             album_release_date = song['track']['album']['release_date']
-           
+
            # artist info
             song_artists    = song['track']['artists']  # LIST of all artists that made this song
             album_artist_id = song['track']['album']['artists'][0]['id']  # PRIMARY artist who made this album
-            
+
             ### insert data in databse ###
             # enter stream infos
             self.db.insert_row(
@@ -412,7 +412,7 @@ class FetchSongs:
                     "songID" : song_id
                 }
             )
-            
+
             # enter song infos
             self.db.insert_row(
                 table = "Song",
@@ -425,7 +425,7 @@ class FetchSongs:
                     "trackNumber" : track_number
                 }
             )
-            
+
             # enter album infos
             self.db.insert_row(
                 table = "Album",
@@ -436,10 +436,11 @@ class FetchSongs:
                     "releaseDate" : album_release_date,
                     "totalTracks" : total_tracks,
                     "type" : album_type,
-                    "img" : album_img
+                    "imgBig" : album_imgBig,
+                    "imgSmall" : album_imgSmall
                 }
             )
-            
+
             # enter artist infos
             for artist in song_artists:
                 # artist info
@@ -461,18 +462,25 @@ class FetchSongs:
 
     def add_album_info(self, song_number=50):
         print("add album info...")
-        
+
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
-            f"""select * from Song where trackNumber IS NULL or albumID IS NULL limit {song_number}"""
+            f"""
+            select *
+            from Song
+            where
+                trackNumber IS NULL
+                or
+                albumID IS NULL
+            limit {song_number}"""
         )
-        
+
         if rows == []:
             return
-            
+
         # spotify API request for multiple tracks
         song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
-        
+
         query = f'https://api.spotify.com/v1/tracks?ids={song_ids}'
 
         response = requests.get(
@@ -482,21 +490,22 @@ class FetchSongs:
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         ).json()
-        
+
         # enter album data
-        for song in response["tracks"]: 
+        for song in response["tracks"]:
             track_number = song['track_number']
             song_id      = song['id']
-            
+
             # parse album info
             album_name   = song['album']['name']
             album_id     = song['album']['id']
-            album_img    = song['album']['images'][0]["url"]
+            album_imgBig = song['album']['images'][0]["url"]
+            album_imgSmall = song['album']['images'][-1]["url"]
             album_type   = song['album']['album_type']
             total_tracks = song['album']['total_tracks']
             album_artist_id = song['album']['artists'][0]['id']  # PRIMARY artist who made this album
             album_release_date = song['album']['release_date']
-            
+
             # enter album infos in database
             self.db.insert_row(
                 table = "Album",
@@ -507,10 +516,11 @@ class FetchSongs:
                     "releaseDate" : album_release_date,
                     "totalTracks" : total_tracks,
                     "type" : album_type,
-                    "img" : album_img
+                    "imgBig" : album_imgBig,
+                    "imgSmall" : album_imgSmall,
                 }
             )
-            
+
             # enter track number and album of song to database
             self.db.update_cell(
                 table = "Song",
@@ -529,12 +539,12 @@ class FetchSongs:
         print('add artist info...')
         # get ids
         rows = self.db.get_all(
-            f"""select * from Artist where popularity is null limit {artist_number}"""
+            f"""select * from Artist where imgBig is null limit {artist_number}"""
         )
-        
+
         if rows == []:
             return
-        
+
         # Spotify API call
         artist_ids = ','.join([artist["ID"] for artist in rows]) # string of artist IDS
         query = f'https://api.spotify.com/v1/artists?ids={artist_ids}'
@@ -546,35 +556,36 @@ class FetchSongs:
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         ).json()
-        
-        
+
+
         for artist in response["artists"]:
             # parse artist info
             artist_id: str  = artist["id"]
             genres: list    = artist["genres"]
             images: list    = artist["images"]
             popularity: int = artist["popularity"]
-            
+
             # enter data in database
             self.db.update_cell(
                 table = "Artist",
                 column = "popularity",
                 primary_keys = { "ID": artist_id },
                 new_value = popularity
-            )                
-            self.db.update_cell(
-                table = "Artist",
-                column = "imgBig",
-                primary_keys = { "ID": artist_id },
-                new_value = images[0]["url"]
             )
-            self.db.update_cell(
-                table = "Artist",
-                column = "imgSmall",
-                primary_keys = { "ID": artist_id },
-                new_value = images[-1]["url"]
-            )
-            
+            if len(images) > 0:
+                self.db.update_cell(
+                    table = "Artist",
+                    column = "imgBig",
+                    primary_keys = { "ID": artist_id },
+                    new_value = images[0]["url"]
+                )
+                self.db.update_cell(
+                    table = "Artist",
+                    column = "imgSmall",
+                    primary_keys = { "ID": artist_id },
+                    new_value = images[-1]["url"]
+                )
+
             for genre in genres:
                 self.db.insert_row(
                     table = "Genre",
@@ -583,17 +594,17 @@ class FetchSongs:
                         "genre": genre
                     }
                 )
-            
+
     def add_audio_features(self, song_number=50):
         print("add audio features...")
         # get songs with key is NULL. These songs propably don't have the other audio features as well
         rows = self.db.get_all(
             f"""select * from Song where key IS NULL limit {song_number}"""
         )
-        
+
         if rows == []:
             return
-        
+
         # Spotify API Call
         song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
         query = f'https://api.spotify.com/v1/audio-features?ids={song_ids}'
@@ -605,11 +616,11 @@ class FetchSongs:
                 "Authorization": "Bearer {}".format(self.spotify_token)
             }
         ).json()
-        
-        for song in response["audio_features"]: 
+
+        for song in response["audio_features"]:
             if "id" not in song:
                 continue
-            
+
             # parse audio features
             song_id        = song["id"]
             key            = song["key"]
@@ -618,7 +629,7 @@ class FetchSongs:
             loudness       = song["loudness"]
             tempo          = song["tempo"]
             energy         = song["energy"]
-            
+
             # insert data in table
             self.db.update_cell(
                 table = "Song",
@@ -650,32 +661,32 @@ class FetchSongs:
                 primary_keys = { "ID" : song_id },
                 new_value = tempo
             )
-            
+
             self.db.update_cell(
                 table = "Song",
                 column = "energy",
                 primary_keys = { "ID" : song_id },
                 new_value = energy
             )
-            
-    def add_lyrics(self, song_number=30):       
+
+    def add_lyrics(self, song_number=30):
         print("add lyrics info...")
-        
+
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
             f"""
             select Song.ID, Song.title, Artist.name, Song.lyrics
             from Song
             join writtenBy on Song.ID = writtenBy.songID
-            join Artist on writtenBy.artistID = Artist.ID 
+            join Artist on writtenBy.artistID = Artist.ID
             where Song.lyrics is null
             limit {song_number}
             """
         )
-        
+
         if rows == []:
             return
-        
+
         used_ids = []
         for song in rows:
             # the sql query lists song multible times of each assiociated artist.
@@ -683,10 +694,10 @@ class FetchSongs:
             if song["ID"] in used_ids:
                 continue
             lyrics = retrieve_lyrics(
-                artistname=song["name"], 
-                songname=song["title"] 
+                artistname=song["name"],
+                songname=song["title"]
             )
-            
+
             if lyrics is not None:
                 self.db.update_cell(
                     table = "Song",
@@ -694,20 +705,20 @@ class FetchSongs:
                     primary_keys = { "ID" : song["ID"] },
                     new_value = lyrics
                 )
-            
-            used_ids.append(song["ID"])
-            
-        
-        
 
-  
+            used_ids.append(song["ID"])
+
+
+
+
+
 if __name__ == "__main__":
     songs = FetchSongs()
     songs.recent_songs_to_database()
     songs.add_album_info()
     songs.add_artist_info()
     songs.add_audio_features()
-    songs.add_lyrics()
+    # songs.add_lyrics()
 
-    
+
 

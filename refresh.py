@@ -1,5 +1,5 @@
 import requests
-from secrets import refresh_token, client_secret_base64
+from credentials import refresh_token, client_secret_base64
 
 class TokenRefresh:
     def __init__(self):
