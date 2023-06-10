@@ -1,99 +1,82 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 import requests
-import json
-import time
+import re
 
-def retrieve_lyrics(artistname, songname):
+chrome_header = {
+    "User-Agent": "Chrome/91.0.4472.124",
+    "Accept": "text/html;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive"
+}
+
+pattern_timestamp = re.compile("\d{2}:\d{2}-\d{2}:\d{2}")
+
+def retrieve_lyrics(artistname, songname, verbose=False):
+    """
+    crape the Gneius page found by artist and song name.
+    @param verbose: boolean for printed out
+    """
+
+
     # prepare text for url
     feat_index = songname.find('feat.') # removes (feat. xyz) from title
     if  feat_index > 0:
         songname = songname[:feat_index-1].strip()
-    
+
     switch = [
         [' - ', '-'],
         [' ', '-'],
         ['\'', ''],
-        ['/' , '-'],
+        ['/', '-'],
         ['.',  ''],
         ['(',  ''],
         [')',  ''],
         [',',  ''],
         ['?',  ''],
         ['!',  ''],
+        ['&',  'and'],
         ['ü', 'u'],
         ['ä', 'a'],
         ['ö', 'o']
     ]
-    
-    for i in range(len(switch)):        # removes ceratin characters
+
+    for i in range(len(switch)):        # removes certain characters
         artistname = artistname.lower().replace(switch[i][0], switch[i][1])
-        songname   = songname.lower().replace(switch[i][0], switch[i][1])    
-        
-    
+        songname   = songname.lower().replace(switch[i][0], switch[i][1])
+
+
     # make request
-    resp = requests.get(f'https://genius.com/{artistname}-{songname}-lyrics')
-    
+    resp = requests.get(f'https://genius.com/{artistname}-{songname}-lyrics', headers=chrome_header)
+
     if resp.status_code != 200:
-        if resp.status_code == 404:
-            print(f'\t404: {artistname}-{songname}-lyrics')
-        else:
-            # print(f'{artistname}-{songname}-lyrics')
+        if verbose is True:
+            print(f'{artistname}-{songname}-lyrics')
             print('\t->', resp.status_code, resp)
-        return
-        
+        return None
+
     soup_html = BeautifulSoup(resp.text, 'html.parser')
-    lyrics = soup_html.find("div", class_="Lyrics__Container-sc-1ynbvzw-6 YYrds")
-    
-    if lyrics:
-        lines_list = lyrics.get_text(separator="\n").splitlines()
-        for i in range(len(lines_list)-1, -1, -1):      # iterate backwards to pop all unwanted lines 
-            if '[' in lines_list[i].lower():
-                lines_list.pop(i)
-            elif lines_list[i] in [ ['['], [']'], ['('], [')'] ]:
-                lines_list.pop(i)
+    lyrics_container = soup_html.find_all("div", attrs={"data-lyrics-container" : True} )
 
-        return '\n'.join(lines_list)
-    
-    return None
-                
-                
-                
+    if lyrics_container:
+        lyrics = []
+
+        for section in lyrics_container:
+            lines_list = section.get_text(separator="\n").splitlines()
+            for i in range(len(lines_list)-1, -1, -1):      # iterate backwards to pop all unwanted lines
+                if  '[' in lines_list[i] or ']' in lines_list[i]: # section names always are framed by brackets
+                    lines_list.pop(i)
+                elif re.match( pattern_timestamp, lines_list[i] ): # sometimes timecodes are connected to annotiations on Genius
+                    lines_list.pop(i)
+            lyrics += lines_list
+
+        return '\n'.join(lyrics)
+
+    else:
+        return None
+
+
+
+
 if __name__ == "__main__":
-    with open('song_database.json', 'r') as fd:
-        song_db = json.load(fd)
-    
-    
-    try:    
-        for i, song in enumerate(song_db):
-            # abort if lyrics are known
-            if 'lyrics' in song_db[song]:
-                continue          
-
-            # retrieve lyrics
-            artist_name = song_db[song]["artist"][0]["name"]
-            song_name   = song_db[song]["titel"]
-            
-            print(i, artist_name, song_name)
-            res = retrieve_lyrics(artist_name, song_name)
-            
-            # case not a string response
-            if not isinstance(res, str):
-                continue
-            
-            # enter in database
-            song_db[song]["lyrics"] = res
-            
-            if i % 20 == 0:
-                time.sleep(10)
-            else:            
-                time.sleep(1)
-            
-    except:
-        pass
-        
-    with open('song_database.json', 'w') as fd:
-        json.dump(song_db, fd)
-    
-        
-    
-    
+    print( retrieve_lyrics("Breaking Benjamin", "Torn in Two") )
