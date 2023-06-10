@@ -22,7 +22,7 @@ class FetchSongs:
         self.db = Database("develop.db")
 
     def recent_songs_to_database(self, song_number=50):
-        print(f"\nadd recently played songs to database...", end="")
+        print(f"\nadd recently played songs to database... 100%", end="")
 
 
         query = f'https://api.spotify.com/v1/me/player/recently-played?limit={song_number}'
@@ -120,7 +120,7 @@ class FetchSongs:
             print(f"\radd recently played songs to database... {int(i/len(response['items'])*100) if i < len(response['items'])-2 else 100}%", end="")
 
     def add_album_info(self, song_number=50):
-        print(f"\nadd album info...", end="")
+        print(f"\nadd album info... 100%", end="")
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
             f"""
@@ -196,7 +196,7 @@ class FetchSongs:
             print(f"\radd album info... {int(i/len(response['tracks'])*100) if i < len(response['tracks'])-2 else 100}%", end="")
 
     def add_artist_info(self, artist_number=50):
-        print(f"\nadd artist info...", end="")
+        print(f"\nadd artist info... 100%", end="")
 
 
         # get ids
@@ -259,7 +259,7 @@ class FetchSongs:
             print(f"\radd artist info... {int(i/len(response['artists'])*100) if i < len(response['artists'])-2 else 100}%", end="")
 
     def add_audio_features(self, song_number=50):
-        print(f"\nadd audio features...", end="")
+        print(f"\nadd audio features... 100%", end="")
 
 
         # get songs with key is NULL. These songs propably don't have the other audio features as well
@@ -336,7 +336,7 @@ class FetchSongs:
             print(f"\radd audio features... {int(i/len(response['audio_features'])*100) if i < len(response['audio_features'])-2 else 100}%", end="")
 
     def add_lyrics(self, song_number=30):
-        print(f"\nadd lyrics info...", end="")
+        print(f"\nadd lyrics info... 100%", end="")
 
 
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
