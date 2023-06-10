@@ -8,4 +8,4 @@ initial_api_tokens.py
 *.bat
 *.db
 *.db-journal
-
+inspect.sh
