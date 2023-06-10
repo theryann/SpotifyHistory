@@ -6,6 +6,8 @@ from credentials import spotify_user_id
 from refresh import TokenRefresh
 from database import Database
 
+import time
+
 
 class FetchSongs:
     """ class to support all the insertion and updates into the database """
@@ -324,7 +326,7 @@ class FetchSongs:
             )
 
     def add_lyrics(self, song_number=30):
-        print("add lyrics info...")
+        print("add lyrics info...\n")
 
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
@@ -333,7 +335,7 @@ class FetchSongs:
             from Song
             join writtenBy on Song.ID = writtenBy.songID
             join Artist on writtenBy.artistID = Artist.ID
-            where Song.lyrics is null
+            where Song.lyrics is null or Song.lyrics = ''
             limit {song_number}
             """
         )
@@ -343,24 +345,33 @@ class FetchSongs:
 
         used_ids = []
         for song in rows:
-            # the sql query lists song multible times of each assiociated artist.
+            # the sql query lists songs multiple times for each assiociated artist (artist name needed for api call).
             # This is hard to prevent in sql thus the used ids list
             if song["ID"] in used_ids:
                 continue
             lyrics = retrieve_lyrics(
                 artistname=song["name"],
-                songname=song["title"]
+                songname=song["title"],
+                verbose=False
             )
 
+            new_lyrics_info: str # value to send to database. either the lyrics or %not available%.
+                                 # This prevents from always requesting the same 'broken' songs and never moving on
+
             if lyrics is not None:
-                self.db.update_cell(
-                    table = "Song",
-                    column = "lyrics",
-                    primary_keys = { "ID" : song["ID"] },
-                    new_value = lyrics
-                )
+                new_lyrics_info = lyrics
+            else:
+                new_lyrics_info = '%not available%'
+
+            self.db.update_cell(
+                table = "Song",
+                column = "lyrics",
+                primary_keys = { "ID" : song["ID"] },
+                new_value = new_lyrics_info
+            )
 
             used_ids.append(song["ID"])
+            time.sleep(1)
 
 
 
@@ -372,7 +383,7 @@ if __name__ == "__main__":
     songs.add_album_info()
     songs.add_artist_info()
     songs.add_audio_features()
-    # songs.add_lyrics()
+    songs.add_lyrics()
 
 
 
