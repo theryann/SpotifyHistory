@@ -21,6 +21,6 @@ class TokenRefresh:
             quit()
 
         new_token = response.json()['access_token']
-        print("new Token:", new_token, '\n')
+        print("new Token:", new_token)
 
         return new_token

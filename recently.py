@@ -22,7 +22,9 @@ class FetchSongs:
         self.db = Database("develop.db")
 
     def recent_songs_to_database(self, song_number=50):
-        print("add recently played songs to database...")
+        print(f"\nadd recently played songs to database...", end="")
+
+
         query = f'https://api.spotify.com/v1/me/player/recently-played?limit={song_number}'
 
         response = requests.get(
@@ -33,7 +35,7 @@ class FetchSongs:
             }
         ).json()
 
-        for song in response['items']:
+        for i, song in enumerate(response['items']):
             ### parse Data from JSON ###
             # stream info
             played_at = song['played_at']
@@ -115,10 +117,10 @@ class FetchSongs:
                         "artistID" : artist["id"]
                     }
                 )
+            print(f"\radd recently played songs to database... {int(i/len(response['items'])*100) if i < len(response['items'])-2 else 100}%", end="")
 
     def add_album_info(self, song_number=50):
-        print("add album info...")
-
+        print(f"\nadd album info...", end="")
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
             f"""
@@ -148,7 +150,7 @@ class FetchSongs:
         ).json()
 
         # enter album data
-        for song in response["tracks"]:
+        for i, song in enumerate(response["tracks"]):
             track_number = song['track_number']
             song_id      = song['id']
 
@@ -191,8 +193,12 @@ class FetchSongs:
                 new_value = album_id
             )
 
+            print(f"\radd album info... {int(i/len(response['tracks'])*100) if i < len(response['tracks'])-2 else 100}%", end="")
+
     def add_artist_info(self, artist_number=50):
-        print('add artist info...')
+        print(f"\nadd artist info...", end="")
+
+
         # get ids
         rows = self.db.get_all(
             f"""select * from Artist where imgBig is null limit {artist_number}"""
@@ -214,7 +220,7 @@ class FetchSongs:
         ).json()
 
 
-        for artist in response["artists"]:
+        for i, artist in enumerate(response["artists"]):
             # parse artist info
             artist_id: str  = artist["id"]
             genres: list    = artist["genres"]
@@ -250,9 +256,12 @@ class FetchSongs:
                         "genre": genre
                     }
                 )
+            print(f"\radd artist info... {int(i/len(response['artists'])*100) if i < len(response['artists'])-2 else 100}%", end="")
 
     def add_audio_features(self, song_number=50):
-        print("add audio features...")
+        print(f"\nadd audio features...", end="")
+
+
         # get songs with key is NULL. These songs propably don't have the other audio features as well
         rows = self.db.get_all(
             f"""select * from Song where key IS NULL limit {song_number}"""
@@ -273,7 +282,7 @@ class FetchSongs:
             }
         ).json()
 
-        for song in response["audio_features"]:
+        for i, song in enumerate(response["audio_features"]):
             if "id" not in song:
                 continue
 
@@ -324,9 +333,11 @@ class FetchSongs:
                 primary_keys = { "ID" : song_id },
                 new_value = energy
             )
+            print(f"\radd audio features... {int(i/len(response['audio_features'])*100) if i < len(response['audio_features'])-2 else 100}%", end="")
 
     def add_lyrics(self, song_number=30):
-        print("add lyrics info...\n")
+        print(f"\nadd lyrics info...", end="")
+
 
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
@@ -344,7 +355,7 @@ class FetchSongs:
             return
 
         used_ids = []
-        for song in rows:
+        for i, song in enumerate(rows):
             # the sql query lists songs multiple times for each assiociated artist (artist name needed for api call).
             # This is hard to prevent in sql thus the used ids list
             if song["ID"] in used_ids:
@@ -371,6 +382,8 @@ class FetchSongs:
             )
 
             used_ids.append(song["ID"])
+            print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
+
             time.sleep(1)
 
 
