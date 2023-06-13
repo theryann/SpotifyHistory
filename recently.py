@@ -2,8 +2,7 @@ import requests
 
 from scrape_lyrics import retrieve_lyrics
 
-from credentials import spotify_user_id
-from refresh import TokenRefresh
+from refresh  import TokenRefresh
 from database import Database
 
 import time
@@ -13,9 +12,6 @@ class FetchSongs:
     """ class to support all the insertion and updates into the database """
 
     def __init__(self):
-        self.user_id = spotify_user_id
-        self.response_json = None
-
         Refresh = TokenRefresh()
         self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
 
@@ -145,7 +141,7 @@ class FetchSongs:
             query,
             headers = {
                 "Content-Type" : "application/json",
-                "Authorization": "Bearer {}".format(self.spotify_token)
+                "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
 
@@ -215,7 +211,7 @@ class FetchSongs:
             query,
             headers = {
                 "Content-Type" : "application/json",
-                "Authorization": "Bearer {}".format(self.spotify_token)
+                "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
 
@@ -278,7 +274,7 @@ class FetchSongs:
             query,
             headers = {
                 "Content-Type" : "application/json",
-                "Authorization": "Bearer {}".format(self.spotify_token)
+                "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
 
