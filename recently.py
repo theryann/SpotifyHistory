@@ -2,20 +2,25 @@ import requests
 
 from scrape_lyrics import retrieve_lyrics
 
-from refresh  import TokenRefresh
+from credentials import tokens
+from refresh import TokenRefresh
+
 from database import Database
 
 import time
 
 
 class FetchSongs:
-    """ class to support all the insertion and updates into the database """
+    """
+    class to support all the insertion and updates into the database.
+    @param: user ...string that represents the name of the person as named in the credentials keys and database names
+    """
 
-    def __init__(self):
-        Refresh = TokenRefresh()
-        self.spotify_token = Refresh.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
+    def __init__(self, user: str):
+        Refresher = TokenRefresh(user)
+        self.spotify_token = Refresher.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
 
-        self.db = Database("develop.db")
+        self.db = Database(f"{user}.db")
 
     def recent_songs_to_database(self, song_number=50):
         print(f"\nadd recently played songs to database... 100%", end="")
@@ -387,12 +392,13 @@ class FetchSongs:
 
 
 if __name__ == "__main__":
-    songs = FetchSongs()
-    songs.recent_songs_to_database()
-    songs.add_album_info()
-    songs.add_artist_info()
-    songs.add_audio_features()
-    songs.add_lyrics()
+    for user in tokens:
+        songs = FetchSongs(user)
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
+        songs.add_lyrics()
 
 
 

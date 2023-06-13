@@ -1,10 +1,11 @@
 import requests
-from credentials import refresh_token, client_secret_base64
+from credentials import tokens
 
 class TokenRefresh:
-    def __init__(self):
-        self.refresh_token = refresh_token
-        self.client_secret_base64 = client_secret_base64
+    def __init__(self, user):
+        self.user = user
+        self.refresh_token = tokens[user]['refresh_token']
+        self.client_secret_base64 = tokens[user]['client_secret_base64']
 
     def refresh_spotify_token(self):
         query = 'https://accounts.spotify.com/api/token'
