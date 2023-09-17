@@ -1,4 +1,6 @@
 import requests
+import time
+import json
 
 from scrape_lyrics import retrieve_lyrics
 
@@ -7,7 +9,6 @@ from refresh import TokenRefresh
 
 from database import Database
 
-import time
 
 
 class FetchSongs:
@@ -390,7 +391,8 @@ class FetchSongs:
 
 class Analyzer:
     def __init__(self, user: str) -> None:
-        self.db = Database(f"{user}.db")
+        self.db: Database = Database(f"{user}.db")
+        self.user: str = user
 
     def rank_album_playthroughs(self) -> None:
         query: str = """
@@ -415,15 +417,29 @@ class Analyzer:
             rows: dict = self.db.get_all( query.format(offset) )
 
             if rows == []:
-                for a in album_playthroughs:
-                    print(a, album_playthroughs[a])
+                try:
+                    with open('analytics.json', 'r') as fd:
+                        data = json.load(fd)
+                        if self.user not in data:
+                            data[self.user] = {}
+                        data[self.user]['albumPlaythrough'] = album_playthroughs
+
+                    with open('analytics.json', 'w') as fd:
+                        json.dump(data, fd)
+
+                except FileNotFoundError:
+                    with open('analytics.json', 'w') as fd:
+                        data = {}
+                        data[self.user] = {}
+                        data[self.user]['albumPlaythrough'] = album_playthroughs
+                        json.dump(data, fd)
+
                 break
 
             for i, stream in enumerate(rows):
                 if i == 0:
                     if offset == 0:
                         curr_album = stream
-                        print('now')
                         continue
 
                 if stream['albumID'] != curr_album['albumID']:
@@ -450,13 +466,13 @@ class Analyzer:
 
 
 if __name__ == "__main__":
-    for user in tokens:
-        songs = FetchSongs(user)
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
-        songs.add_lyrics()
+    # for user in tokens:
+    #     songs = FetchSongs(user)
+    #     songs.recent_songs_to_database()
+    #     songs.add_album_info()
+    #     songs.add_artist_info()
+    #     songs.add_audio_features()
+    #     songs.add_lyrics()
 
     for user in tokens:
         analyzer = Analyzer(user)
