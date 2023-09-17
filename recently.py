@@ -455,9 +455,10 @@ class Analyzer:
                 else:
                     if stream['trackNumber'] == stream['totalTracks']:
                         if stream['albumID'] in album_playthroughs:
-                            album_playthroughs[ stream['albumID'] ] += 1
+                            album_playthroughs[ stream['albumID'] ]['playthroughs'] += 1
                         else:
-                            album_playthroughs[ stream['albumID'] ]  = 1
+                            album_playthroughs[ stream['albumID'] ]  = stream
+                            album_playthroughs[ stream['albumID'] ]['playthroughs']  = 1
                     else:
                         curr_album = stream
 
