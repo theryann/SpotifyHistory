@@ -388,6 +388,64 @@ class FetchSongs:
             time.sleep(1)
 
 
+class Analyzer:
+    def __init__(self, user: str) -> None:
+        self.db = Database(f"{user}.db")
+
+    def rank_album_playthroughs(self) -> None:
+        query: str = """
+        SELECT
+            timeStamp,
+            Song.albumID, Song.trackNumber,
+            Album.totalTracks, Album.name, Album.imgSmall
+        FROM Stream
+        JOIN Song ON Song.ID = Stream.songID
+        JOIN Album ON Album.ID = Song.albumID
+        WHERE Album.type != 'single'
+        ORDER BY timeStamp
+        LIMIT 100
+        OFFSET {}
+        """
+        album_playthroughs: dict = {}
+
+        offset: int = 0
+        curr_album: dict = {}
+
+        while True:
+            rows: dict = self.db.get_all( query.format(offset) )
+
+            if rows == []:
+                for a in album_playthroughs:
+                    print(a, album_playthroughs[a])
+                break
+
+            for i, stream in enumerate(rows):
+                if i == 0:
+                    if offset == 0:
+                        curr_album = stream
+                        print('now')
+                        continue
+
+                if stream['albumID'] != curr_album['albumID']:
+                    if stream['trackNumber'] == 1:
+                        curr_album = stream
+                    continue
+
+                if stream['trackNumber'] != curr_album['trackNumber'] + 1:
+                    if stream['trackNumber'] == 1:
+                        curr_album = stream
+                    continue
+
+                else:
+                    if stream['trackNumber'] == stream['totalTracks']:
+                        if stream['albumID'] in album_playthroughs:
+                            album_playthroughs[ stream['albumID'] ] += 1
+                        else:
+                            album_playthroughs[ stream['albumID'] ]  = 1
+                    else:
+                        curr_album = stream
+
+            offset += 100
 
 
 
@@ -399,6 +457,11 @@ if __name__ == "__main__":
         songs.add_artist_info()
         songs.add_audio_features()
         songs.add_lyrics()
+
+    for user in tokens:
+        analyzer = Analyzer(user)
+        analyzer.rank_album_playthroughs()
+
 
 
 
