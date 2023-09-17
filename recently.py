@@ -466,13 +466,13 @@ class Analyzer:
 
 
 if __name__ == "__main__":
-    # for user in tokens:
-    #     songs = FetchSongs(user)
-    #     songs.recent_songs_to_database()
-    #     songs.add_album_info()
-    #     songs.add_artist_info()
-    #     songs.add_audio_features()
-    #     songs.add_lyrics()
+    for user in tokens:
+        songs = FetchSongs(user)
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
+        songs.add_lyrics()
 
     for user in tokens:
         analyzer = Analyzer(user)
