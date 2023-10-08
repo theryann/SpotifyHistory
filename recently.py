@@ -388,6 +388,97 @@ class FetchSongs:
 
             time.sleep(1)
 
+    def save_images_locally(self, album_number=30, artist_number=30):
+        print(f"\ndownload cover... 100%", end="")
+        i = 0
+
+        def write_img_file(img_content, img_link, col_name):
+            """
+            function actuially save the img file
+            @param img_content: is image a cover or an artist picture. this will decide the directory it is saved to
+            @param img_link: link to image file
+            @param col_name: how is the column named where the link is stored in
+            """
+            response = requests.get(img_link)
+
+            if not response.ok:
+                return
+
+            img_data = response.content
+
+            with open(f'images/{img_content}/{ album[col_name].split("/")[-1] }.jpg', 'wb') as handler:
+                handler.write(img_data)
+
+
+        # save ALBUM Cover
+        album_rows = self.db.get_all(
+            f"""
+            SELECT ID, imgSmall, imgBig
+            FROM Album
+            WHERE imgSmallLocal is NULL or imgBigLocal is NULL
+            LIMIT {album_number}
+            """
+        )
+
+        for album in album_rows:
+            # Small Images
+            write_img_file('albums', album['imgSmall'], 'imgSmall')
+            self.db.update_cell(
+                table = 'Album',
+                column = 'imgSmallLocal',
+                primary_keys = {'ID' : album['ID'] },
+                new_value = f'images/album/{ album["imgSmall"].split("/")[-1] }.jpg'
+            )
+
+            # Big Images
+            write_img_file('albums', album['imgBig'], 'imgBig')
+            self.db.update_cell(
+                table = 'Album',
+                column = 'imgBigLocal',
+                primary_keys = {'ID' : album['ID'] },
+                new_value = f'images/album/{ album["imgBig"].split("/")[-1] }.jpg'
+            )
+            print(f"\rdownload cover... {int(i/len(album_rows)*100) if i < len(album_rows)-2 else 100}%", end="")
+            i += 1
+
+
+
+        # save ARTIST Cover
+        print(f"\ndownload artist pics... 100%", end="")
+        i = 0
+        artist_rows = self.db.get_all(
+            f"""
+            SELECT ID, imgSmall, imgBig
+            FROM Artist
+            WHERE imgSmallLocal is NULL or imgBigLocal is NULL
+            LIMIT {artist_number}
+            """
+        )
+
+        for artist in artist_rows:
+            # Small Images
+            write_img_file('artists', artist['imgSmall'], 'imgSmall')
+            self.db.update_cell(
+                table = 'Artist',
+                column = 'imgSmallLocal',
+                primary_keys = {'ID' : artist['ID'] },
+                new_value = f'images/artist/{ artist["imgSmall"].split("/")[-1] }.jpg'
+            )
+
+            # Big Images
+            write_img_file('artists', album['imgBig'], 'imgBig')
+            self.db.update_cell(
+                table = 'Artist',
+                column = 'imgBigLocal',
+                primary_keys = {'ID' : artist['ID'] },
+                new_value = f'images/artist/{ artist["imgBig"].split("/")[-1] }.jpg'
+            )
+            print(f"\rdownload artist pics... {int(i/len(album_rows)*100) if i < len(album_rows)-2 else 100}%", end="")
+            i += 1
+
+
+
+
 
 class Analyzer:
     def __init__(self, user: str) -> None:
@@ -469,6 +560,10 @@ class Analyzer:
 if __name__ == "__main__":
     for user in tokens:
         songs = FetchSongs(user)
+
+        songs.save_images_locally()
+
+        quit()
         songs.recent_songs_to_database()
         songs.add_album_info()
         songs.add_artist_info()

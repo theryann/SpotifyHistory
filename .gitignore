@@ -1,5 +1,6 @@
 __pycache__/
 .vs/
+images/
 credentials.py
 history.csv
 initial_api_tokens.py
