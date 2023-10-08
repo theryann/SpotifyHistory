@@ -406,7 +406,7 @@ class FetchSongs:
 
             img_data = response.content
 
-            with open(f'images/{img_content}/{ album[col_name].split("/")[-1] }.jpg', 'wb') as handler:
+            with open(f'images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
                 handler.write(img_data)
 
 
@@ -415,7 +415,10 @@ class FetchSongs:
             f"""
             SELECT ID, imgSmall, imgBig
             FROM Album
-            WHERE imgSmallLocal is NULL or imgBigLocal is NULL
+            WHERE
+                (imgSmallLocal is NULL or imgBigLocal is NULL)
+                and
+                imgBig != '' and imgSmall != ''
             LIMIT {album_number}
             """
         )
@@ -427,7 +430,7 @@ class FetchSongs:
                 table = 'Album',
                 column = 'imgSmallLocal',
                 primary_keys = {'ID' : album['ID'] },
-                new_value = f'images/album/{ album["imgSmall"].split("/")[-1] }.jpg'
+                new_value = f'images/albums/{ album["imgSmall"].split("/")[-1] }.jpg'
             )
 
             # Big Images
@@ -436,7 +439,7 @@ class FetchSongs:
                 table = 'Album',
                 column = 'imgBigLocal',
                 primary_keys = {'ID' : album['ID'] },
-                new_value = f'images/album/{ album["imgBig"].split("/")[-1] }.jpg'
+                new_value = f'images/albums/{ album["imgBig"].split("/")[-1] }.jpg'
             )
             print(f"\rdownload cover... {int(i/len(album_rows)*100) if i < len(album_rows)-2 else 100}%", end="")
             i += 1
@@ -444,13 +447,16 @@ class FetchSongs:
 
 
         # save ARTIST Cover
-        print(f"\ndownload artist pics... 100%", end="")
+        print(f"\rdownload artist pics... 100%", end="")
         i = 0
         artist_rows = self.db.get_all(
             f"""
             SELECT ID, imgSmall, imgBig
             FROM Artist
-            WHERE imgSmallLocal is NULL or imgBigLocal is NULL
+            WHERE
+                (imgSmallLocal is NULL or imgBigLocal is NULL)
+                and
+                imgBig != '' and imgSmall != ''
             LIMIT {artist_number}
             """
         )
@@ -462,18 +468,18 @@ class FetchSongs:
                 table = 'Artist',
                 column = 'imgSmallLocal',
                 primary_keys = {'ID' : artist['ID'] },
-                new_value = f'images/artist/{ artist["imgSmall"].split("/")[-1] }.jpg'
+                new_value = f'images/artists/{ artist["imgSmall"].split("/")[-1] }.jpg'
             )
 
             # Big Images
-            write_img_file('artists', album['imgBig'], 'imgBig')
+            write_img_file('artists', artist['imgBig'], 'imgBig')
             self.db.update_cell(
                 table = 'Artist',
                 column = 'imgBigLocal',
                 primary_keys = {'ID' : artist['ID'] },
-                new_value = f'images/artist/{ artist["imgBig"].split("/")[-1] }.jpg'
+                new_value = f'images/artists/{ artist["imgBig"].split("/")[-1] }.jpg'
             )
-            print(f"\rdownload artist pics... {int(i/len(album_rows)*100) if i < len(album_rows)-2 else 100}%", end="")
+            print(f"\rdownload artist pics... {int(i/len(artist_rows)*100) if i < len(artist_rows)-2 else 100}%", end="")
             i += 1
 
 
