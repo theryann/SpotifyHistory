@@ -1,6 +1,7 @@
 import requests
 import time
 import json
+import os
 
 from scrape_lyrics import retrieve_lyrics
 
@@ -392,6 +393,9 @@ class FetchSongs:
         print(f"\ndownload cover... 100%", end="")
         i = 0
 
+        # GET LOCAL SAVE PATH
+        local_path = os.environ.get('SPOTIFY_IMAGE_PATH', '')
+
         def write_img_file(img_content, img_link, col_name):
             """
             function actuially save the img file
@@ -405,8 +409,8 @@ class FetchSongs:
                 return
 
             img_data = response.content
-
-            with open(f'images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
+            
+            with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
                 handler.write(img_data)
 
 
@@ -430,7 +434,7 @@ class FetchSongs:
                 table = 'Album',
                 column = 'imgSmallLocal',
                 primary_keys = {'ID' : album['ID'] },
-                new_value = f'images/albums/{ album["imgSmall"].split("/")[-1] }.jpg'
+                new_value = f'{local_path}images/albums/{ album["imgSmall"].split("/")[-1] }.jpg'
             )
 
             # Big Images
@@ -439,7 +443,7 @@ class FetchSongs:
                 table = 'Album',
                 column = 'imgBigLocal',
                 primary_keys = {'ID' : album['ID'] },
-                new_value = f'images/albums/{ album["imgBig"].split("/")[-1] }.jpg'
+                new_value = f'{local_path}images/albums/{ album["imgBig"].split("/")[-1] }.jpg'
             )
             print(f"\rdownload cover... {int(i/len(album_rows)*100) if i < len(album_rows)-2 else 100}%", end="")
             i += 1
@@ -468,7 +472,7 @@ class FetchSongs:
                 table = 'Artist',
                 column = 'imgSmallLocal',
                 primary_keys = {'ID' : artist['ID'] },
-                new_value = f'images/artists/{ artist["imgSmall"].split("/")[-1] }.jpg'
+                new_value = f'{local_path}images/artists/{ artist["imgSmall"].split("/")[-1] }.jpg'
             )
 
             # Big Images
@@ -477,7 +481,7 @@ class FetchSongs:
                 table = 'Artist',
                 column = 'imgBigLocal',
                 primary_keys = {'ID' : artist['ID'] },
-                new_value = f'images/artists/{ artist["imgBig"].split("/")[-1] }.jpg'
+                new_value = f'{local_path}images/artists/{ artist["imgBig"].split("/")[-1] }.jpg'
             )
             print(f"\rdownload artist pics... {int(i/len(artist_rows)*100) if i < len(artist_rows)-2 else 100}%", end="")
             i += 1
