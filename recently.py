@@ -1,7 +1,7 @@
 import requests
 import time
 import json
-import os
+
 
 from scrape_lyrics import retrieve_lyrics
 
@@ -394,7 +394,7 @@ class FetchSongs:
         i = 0
 
         # GET LOCAL SAVE PATH
-        local_path = os.environ.get('SPOTIFY_IMAGE_PATH', '')
+        local_path = self.read_env('SPOTIFY_IMAGE_PATH', '')
 
         def write_img_file(img_content, img_link, col_name):
             """
@@ -409,7 +409,7 @@ class FetchSongs:
                 return
 
             img_data = response.content
-            
+
             with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
                 handler.write(img_data)
 
@@ -486,7 +486,21 @@ class FetchSongs:
             print(f"\rdownload artist pics... {int(i/len(artist_rows)*100) if i < len(artist_rows)-2 else 100}%", end="")
             i += 1
 
+    def read_env(self, variable_name: str, default=None) -> str:
+        env_variables: dict = {}
 
+        with open('.env', 'r', encoding='utf-8') as fd:
+            for line in fd.readlines():
+                if line.strip() == '':
+                    continue
+
+                key, value = line.split('=')
+                env_variables[ key.strip() ] = value.strip()
+
+        if variable_name in env_variables:
+            return env_variables[variable_name]
+        else:
+            return default
 
 
 
