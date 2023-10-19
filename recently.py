@@ -15,12 +15,15 @@ from database import Database
 class FetchSongs:
     """
     class to support all the insertion and updates into the database.
-    @param: user ...string that represents the name of the person as named in the credentials keys and database names
+    @param: user: string that represents the name of the person as named in the credentials keys and database names
+    @param offline: set online to false for maintanance work on the code or database
+                    that doesn't require fetching of data or generation of tokens
     """
 
-    def __init__(self, user: str):
-        Refresher = TokenRefresh(user)
-        self.spotify_token = Refresher.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
+    def __init__(self, user: str, offline: bool = False):
+        if not offline:
+            Refresher = TokenRefresh(user)
+            self.spotify_token = Refresher.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
 
         self.db = Database(f"{user}.db")
 
@@ -121,6 +124,9 @@ class FetchSongs:
                     }
                 )
             print(f"\radd recently played songs to database... {int(i/len(response['items'])*100) if i < len(response['items'])-2 else 100}%", end="")
+
+    def dsgvo_data_to_database(self):
+        """ official requested data from spotify sort into database """
 
     def add_album_info(self, song_number=50):
         print(f"\nadd album info... 100%", end="")
@@ -583,17 +589,19 @@ class Analyzer:
 
 if __name__ == "__main__":
     for user in tokens:
-        songs = FetchSongs(user)
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
-        songs.save_images_locally()
-        songs.add_lyrics()
+        songs = FetchSongs(user, offline=True)
+        songs.dsgvo_data_to_database()
+        break
+        # songs.recent_songs_to_database()
+        # songs.add_album_info()
+        # songs.add_artist_info()
+        # songs.add_audio_features()
+        # songs.save_images_locally()
+        # songs.add_lyrics()
 
-    for user in tokens:
-        analyzer = Analyzer(user)
-        analyzer.rank_album_playthroughs()
+    # for user in tokens:
+    #     analyzer = Analyzer(user)
+    #     analyzer.rank_album_playthroughs()
 
 
 

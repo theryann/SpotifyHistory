@@ -2,6 +2,7 @@ __pycache__/
 .vs/
 .env
 images/
+Streaming/
 credentials.py
 history.csv
 initial_api_tokens.py
