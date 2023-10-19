@@ -125,8 +125,81 @@ class FetchSongs:
                 )
             print(f"\radd recently played songs to database... {int(i/len(response['items'])*100) if i < len(response['items'])-2 else 100}%", end="")
 
-    def dsgvo_data_to_database(self):
-        """ official requested data from spotify sort into database """
+    def dsgvo_data_to_database(self, path:str):
+        """
+        official requested data from spotify sort into database
+        @param path: path where the json files are located
+        """
+
+        # make sure alle columns exist
+        exisiting_columns: list = self.db.get_all('PRAGMA table_info(Stream);')
+
+        def col_exists(name: str):
+            return any( map(lambda col: col['name'] == name, exisiting_columns) )
+
+        if not col_exists('msPlayed'):
+            self.db.get_all('ALTER TABLE Stream ADD msPlayed INTEGER')
+
+        if not col_exists('connCountry'):
+            self.db.get_all('ALTER TABLE Stream ADD connCountry TEXT')
+
+        if not col_exists('device'):
+            self.db.get_all('ALTER TABLE Stream ADD device TEXT')
+
+        if not col_exists('online'):
+            self.db.get_all('ALTER TABLE Stream ADD online INTEGER')
+
+        # insert data
+        import os
+
+        files: list = [ os.path.join(path, file) for file in os.listdir(path) if os.path.splitext(file)[1] == '.json' and not 'Video' in file ]
+        estimated_items: int = None
+
+        # for every json file
+        for i, file in enumerate(files):
+            with open(file, 'r', encoding='utf-8') as fd:
+                data = json.load(fd)
+
+            if i == 0:
+                estimated_items = len(data) * len(files)
+
+            # for every track
+            for j, track in enumerate(data):
+
+                if track['spotify_track_uri'] is None:
+                    continue
+
+                played_at    = track['ts']
+                device       = track['platform']
+                ms_played    = track['ms_played']
+                conn_country = track['conn_country']
+                online       = 1 - int(track['online'])
+                song_id      = track['spotify_track_uri'].split(':')[2]
+                song_title   = track['master_metadata_track_name']
+
+                # enter stream infos
+                self.db.insert_row(
+                    table = "Stream",
+                    row = {
+                        "timeStamp" : played_at,
+                        "songID" : song_id,
+                        "device": device,
+                        "msPlayed": ms_played,
+                        "connCountry": conn_country,
+                        "online": online
+                    }
+                )
+
+                self.db.insert_row(
+                    table = "Song",
+                    row = {
+                        "ID" : song_id,
+                        "title" : song_title
+                    }
+                )
+
+
+
 
     def add_album_info(self, song_number=50):
         print(f"\nadd album info... 100%", end="")
@@ -590,7 +663,7 @@ class Analyzer:
 if __name__ == "__main__":
     for user in tokens:
         songs = FetchSongs(user, offline=True)
-        songs.dsgvo_data_to_database()
+        songs.dsgvo_data_to_database('Streaming/')
         break
         # songs.recent_songs_to_database()
         # songs.add_album_info()
