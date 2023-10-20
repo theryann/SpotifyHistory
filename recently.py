@@ -156,6 +156,8 @@ class FetchSongs:
         estimated_items: int = None
 
         # for every json file
+        print(f"\nadd dsgvo info...100%", end="")
+
         for i, file in enumerate(files):
             with open(file, 'r', encoding='utf-8') as fd:
                 data = json.load(fd)
@@ -168,16 +170,20 @@ class FetchSongs:
 
                 if track['spotify_track_uri'] is None:
                     continue
+                if track['ms_played'] < 20_000:
+                    continue
 
                 played_at    = track['ts']
                 device       = track['platform']
                 ms_played    = track['ms_played']
                 conn_country = track['conn_country']
-                online       = 1 - int(track['online'])
+                online       = 1 - int(track['offline'])
                 song_id      = track['spotify_track_uri'].split(':')[2]
                 song_title   = track['master_metadata_track_name']
 
                 # enter stream infos
+
+                # insert to Stream Table
                 self.db.insert_row(
                     table = "Stream",
                     row = {
@@ -190,6 +196,35 @@ class FetchSongs:
                     }
                 )
 
+                self.db.update_cell(
+                    table = "Stream",
+                    column = "device",
+                    primary_keys = {"timeStamp": played_at, "songID": song_id},
+                    new_value = device
+                )
+
+                self.db.update_cell(
+                    table = "Stream",
+                    column = "connCountry",
+                    primary_keys = {"timeStamp": played_at, "songID": song_id},
+                    new_value = conn_country
+                )
+
+                self.db.update_cell(
+                    table = "Stream",
+                    column = "msPlayed",
+                    primary_keys = {"timeStamp": played_at, "songID": song_id},
+                    new_value = ms_played
+                )
+
+                self.db.update_cell(
+                    table = "Stream",
+                    column = "online",
+                    primary_keys = {"timeStamp": played_at, "songID": song_id},
+                    new_value = online
+                )
+
+                # insert to Song Table
                 self.db.insert_row(
                     table = "Song",
                     row = {
@@ -199,6 +234,8 @@ class FetchSongs:
                 )
 
 
+                if j % 100 == 0:
+                    print(f"\radd dsgvo info... {((i*j)/estimated_items*100)}%", end="")
 
 
     def add_album_info(self, song_number=50):
