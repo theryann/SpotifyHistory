@@ -239,7 +239,6 @@ class FetchSongs:
                 if j % 100 == 0:
                     print(f"\radd dsgvo info... {( ((i*items_in_one_file)+j) / estimated_items*100):.2f}%", end="")
 
-
     def add_album_info(self, song_number=50):
         print(f"\nadd album info... 100%", end="")
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
@@ -730,13 +729,13 @@ if __name__ == "__main__":
         songs.add_album_info()
         songs.add_artist_info()
         songs.add_audio_features()
-        # songs.save_images_locally()
+        songs.save_images_locally()
         songs.add_lyrics()
-        break
+        # break
 
-    # for user in tokens:
-    #     analyzer = Analyzer(user)
-    #     analyzer.rank_album_playthroughs()
+    for user in tokens:
+        analyzer = Analyzer(user)
+        analyzer.rank_album_playthroughs()
 
 
 
