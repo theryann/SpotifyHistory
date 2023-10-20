@@ -154,16 +154,18 @@ class FetchSongs:
 
         files: list = [ os.path.join(path, file) for file in os.listdir(path) if os.path.splitext(file)[1] == '.json' and not 'Video' in file ]
         estimated_items: int = None
+        items_in_one_file: int = None
 
         # for every json file
-        print(f"\nadd dsgvo info...100%", end="")
+        print(f"\nadd dsgvo info... 100%", end="")
 
         for i, file in enumerate(files):
             with open(file, 'r', encoding='utf-8') as fd:
                 data = json.load(fd)
 
             if i == 0:
-                estimated_items = len(data) * len(files)
+                items_in_one_file = len(data)
+                estimated_items = items_in_one_file * len(files)
 
             # for every track
             for j, track in enumerate(data):
@@ -235,7 +237,7 @@ class FetchSongs:
 
 
                 if j % 100 == 0:
-                    print(f"\radd dsgvo info... {((i*j)/estimated_items*100)}%", end="")
+                    print(f"\radd dsgvo info... {( ((i*items_in_one_file)+j) / estimated_items*100):.2f}%", end="")
 
 
     def add_album_info(self, song_number=50):
@@ -270,8 +272,13 @@ class FetchSongs:
 
         # enter album data
         for i, song in enumerate(response["tracks"]):
-            track_number = song['track_number']
             song_id      = song['id']
+
+            # parse song info for dsgvo data that dont get this from elsewhere
+            song_duration = song['duration_ms']
+            track_number  = song['track_number']
+            explicit      = song['explicit']
+            popularity    = song['popularity']
 
             # parse album info
             album_name   = song['album']['name']
@@ -310,6 +317,24 @@ class FetchSongs:
                 column = "albumID",
                 primary_keys = { "ID" : song_id },
                 new_value = album_id
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "duration",
+                primary_keys = { "ID" : song_id },
+                new_value = song_duration
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "explicit",
+                primary_keys = { "ID" : song_id },
+                new_value = explicit
+            )
+            self.db.update_cell(
+                table = "Song",
+                column = "popularity",
+                primary_keys = { "ID" : song_id },
+                new_value = popularity
             )
 
             print(f"\radd album info... {int(i/len(response['tracks'])*100) if i < len(response['tracks'])-2 else 100}%", end="")
@@ -503,7 +528,7 @@ class FetchSongs:
             used_ids.append(song["ID"])
             print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
 
-            time.sleep(1)
+            time.sleep(.2)
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
@@ -699,15 +724,15 @@ class Analyzer:
 
 if __name__ == "__main__":
     for user in tokens:
-        songs = FetchSongs(user, offline=True)
-        songs.dsgvo_data_to_database('Streaming/')
-        break
-        # songs.recent_songs_to_database()
-        # songs.add_album_info()
-        # songs.add_artist_info()
-        # songs.add_audio_features()
+        songs = FetchSongs(user)
+        # songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
         # songs.save_images_locally()
-        # songs.add_lyrics()
+        songs.add_lyrics()
+        break
 
     # for user in tokens:
     #     analyzer = Analyzer(user)
