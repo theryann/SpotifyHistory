@@ -549,10 +549,9 @@ class FetchSongs:
 
             used_ids.append(song["ID"])
             print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
-            if i == len(rows) - 1:
-                print("\n")
 
             time.sleep(.2)
+        print('n')
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
@@ -746,10 +745,8 @@ class Analyzer:
                     else:
                         curr_album = stream
 
-                if i % 500 == 0:
-                    print(f'\r[{self.user}] rank album playhroughs {i/row_count*100:.2f}%', end='')
-
             offset += 100
+            print(f'\r[{self.user}] rank album playhroughs {offset/row_count*100:.2f}%', end='')
 
         print("\n")
 
