@@ -284,6 +284,10 @@ class FetchSongs:
         for i, song in enumerate(response["tracks"]):
             song_id      = song['id']
 
+            # skip empty response data. Other indicators are relesedate of "0000", name: ""
+            if len( song['album']['images'] ) == 0:
+                continue
+
             # parse song info for dsgvo data that dont get this from elsewhere
             song_duration = song['duration_ms']
             track_number  = song['track_number']
