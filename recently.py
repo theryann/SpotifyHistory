@@ -1,6 +1,7 @@
 import requests
 import time
 import json
+import sys
 
 
 from scrape_lyrics import retrieve_lyrics
@@ -15,12 +16,14 @@ from database import Database
 class FetchSongs:
     """
     class to support all the insertion and updates into the database.
-    @param: user: string that represents the name of the person as named in the credentials keys and database names
+    @param user: string that represents the name of the person as named in the credentials keys and database names
     @param offline: set online to false for maintanance work on the code or database
                     that doesn't require fetching of data or generation of tokens
+    @param debug: in debug all responses are saved to json files
     """
 
-    def __init__(self, user: str, offline: bool = False):
+    def __init__(self, user: str, offline: bool = False, debug: bool = False):
+        self.debug: bool = debug
         if not offline:
             Refresher = TokenRefresh(user)
             self.spotify_token = Refresher.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
@@ -40,6 +43,10 @@ class FetchSongs:
                 "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
+
+        if self.debug:
+            with open('debug_recently-played.json', 'w', encoding='utf-8') as fd:
+                json.dump(response, fd, indent=4)
 
         for i, song in enumerate(response['items']):
             ### parse Data from JSON ###
@@ -269,6 +276,10 @@ class FetchSongs:
             }
         ).json()
 
+        if self.debug:
+            with open('debug_tracks.json', 'w', encoding='utf-8') as fd:
+                json.dump(response, fd, indent=4)
+
         # enter album data
         for i, song in enumerate(response["tracks"]):
             song_id      = song['id']
@@ -362,6 +373,10 @@ class FetchSongs:
             }
         ).json()
 
+        if self.debug:
+            with open('debug_artists.json', 'w', encoding='utf-8') as fd:
+                json.dump(response, fd, indent=4)
+
 
         for i, artist in enumerate(response["artists"]):
             # parse artist info
@@ -424,6 +439,10 @@ class FetchSongs:
                 "Authorization": f"Bearer {self.spotify_token}"
             }
         ).json()
+
+        if self.debug:
+            with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
+                json.dump(response, fd, indent=4)
 
         for i, song in enumerate(response["audio_features"]):
             if "id" not in song:
@@ -650,6 +669,8 @@ class Analyzer:
         self.user: str = user
 
     def rank_album_playthroughs(self) -> None:
+        print(f'\n[{self.user}] rank album playhroughs for', end='')
+
         query: str = """
         SELECT
             timeStamp,
@@ -722,8 +743,11 @@ class Analyzer:
 
 
 if __name__ == "__main__":
+    flags: list = sys.argv[1:]
+    debug: bool = '-d' in flags or '--debug' in flags
+
     for user in tokens:
-        songs = FetchSongs(user)
+        songs = FetchSongs(user=user, debug=debug)
         # songs.dsgvo_data_to_database('Streaming/')
         songs.recent_songs_to_database()
         songs.add_album_info()
