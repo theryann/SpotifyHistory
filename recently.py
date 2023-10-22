@@ -695,6 +695,8 @@ class Analyzer:
         offset: int = 0
         curr_album: dict = {}
 
+        row_count: int = self.db.get_all("SELECT count(*) as 'rows' FROM Stream")[0]['rows']
+
         while True:
             rows: dict = self.db.get_all( query.format(offset) )
 
@@ -739,12 +741,17 @@ class Analyzer:
                         if stream['albumID'] in album_playthroughs:
                             album_playthroughs[ stream['albumID'] ]['playthroughs'] += 1
                         else:
-                            album_playthroughs[ stream['albumID'] ]  = stream
+                            album_playthroughs[ stream['albumID'] ] = stream
                             album_playthroughs[ stream['albumID'] ]['playthroughs']  = 1
                     else:
                         curr_album = stream
 
+                if i % 500 == 0:
+                    print(f'\r[{self.user}] rank album playhroughs {i/row_count*100:.2f}%', end='')
+
             offset += 100
+
+        print("\n")
 
 
 
