@@ -549,6 +549,8 @@ class FetchSongs:
 
             used_ids.append(song["ID"])
             print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
+            if i == len(rows) - 1:
+                print("\n")
 
             time.sleep(.2)
 
@@ -673,7 +675,7 @@ class Analyzer:
         self.user: str = user
 
     def rank_album_playthroughs(self) -> None:
-        print(f'\n[{self.user}] rank album playhroughs for', end='')
+        print(f'\n[{self.user}] rank album playhroughs', end='')
 
         query: str = """
         SELECT
