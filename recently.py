@@ -574,7 +574,7 @@ class FetchSongs:
 
             img_data = response.content
 
-            with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
+            with open(f'images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:
                 handler.write(img_data)
 
 
