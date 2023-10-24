@@ -700,22 +700,19 @@ class Analyzer:
             rows: dict = self.db.get_all( query.format(offset) )
 
             if rows == []:
-                try:
-                    with open('analytics.json', 'r') as fd:
-                        data = json.load(fd)
-                        if self.user not in data:
-                            data[self.user] = {}
-                        data[self.user]['albumPlaythrough'] = album_playthroughs
+                self.db.ensure_column(
+                    table_name  = 'Album',
+                    column_name = 'fullPlaythroughs',
+                    data_type   = 'INTEGER'
+                )
 
-                    with open('analytics.json', 'w') as fd:
-                        json.dump(data, fd)
-
-                except FileNotFoundError:
-                    with open('analytics.json', 'w') as fd:
-                        data = {}
-                        data[self.user] = {}
-                        data[self.user]['albumPlaythrough'] = album_playthroughs
-                        json.dump(data, fd)
+                for album_id in album_playthroughs:
+                    self.db.update_cell(
+                        table  = 'Album',
+                        column = 'fullPlaythroughs',
+                        primary_keys = { 'ID': album_playthroughs[ album_id ][ 'albumID' ] },
+                        new_value    = album_playthroughs[ album_id ][ 'playthroughs' ]
+                    )
 
                 break
 
@@ -756,16 +753,16 @@ if __name__ == "__main__":
     flags: list = sys.argv[1:]
     debug: bool = '-d' in flags or '--debug' in flags
 
-    for user in tokens:
-        songs = FetchSongs(user=user, debug=debug)
-        # songs.dsgvo_data_to_database('Streaming/')
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
-        songs.save_images_locally()
-        songs.add_lyrics()
-        # break
+    # for user in tokens:
+    #     songs = FetchSongs(user=user, debug=debug)
+    #     # songs.dsgvo_data_to_database('Streaming/')
+    #     songs.recent_songs_to_database()
+    #     songs.add_album_info()
+    #     songs.add_artist_info()
+    #     songs.add_audio_features()
+    #     songs.save_images_locally()
+    #     songs.add_lyrics()
+    #     # break
 
     for user in tokens:
         analyzer = Analyzer(user)
