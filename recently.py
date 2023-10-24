@@ -753,16 +753,16 @@ if __name__ == "__main__":
     flags: list = sys.argv[1:]
     debug: bool = '-d' in flags or '--debug' in flags
 
-    # for user in tokens:
-    #     songs = FetchSongs(user=user, debug=debug)
-    #     # songs.dsgvo_data_to_database('Streaming/')
-    #     songs.recent_songs_to_database()
-    #     songs.add_album_info()
-    #     songs.add_artist_info()
-    #     songs.add_audio_features()
-    #     songs.save_images_locally()
-    #     songs.add_lyrics()
-    #     # break
+    for user in tokens:
+        songs = FetchSongs(user=user, debug=debug)
+        # songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
+        songs.save_images_locally()
+        songs.add_lyrics()
+        # break
 
     for user in tokens:
         analyzer = Analyzer(user)
