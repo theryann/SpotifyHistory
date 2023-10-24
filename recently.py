@@ -700,22 +700,19 @@ class Analyzer:
             rows: dict = self.db.get_all( query.format(offset) )
 
             if rows == []:
-                try:
-                    with open('analytics.json', 'r') as fd:
-                        data = json.load(fd)
-                        if self.user not in data:
-                            data[self.user] = {}
-                        data[self.user]['albumPlaythrough'] = album_playthroughs
+                self.db.ensure_column(
+                    table_name  = 'Album',
+                    column_name = 'fullPlaythroughs',
+                    data_type   = 'INTEGER'
+                )
 
-                    with open('analytics.json', 'w') as fd:
-                        json.dump(data, fd)
-
-                except FileNotFoundError:
-                    with open('analytics.json', 'w') as fd:
-                        data = {}
-                        data[self.user] = {}
-                        data[self.user]['albumPlaythrough'] = album_playthroughs
-                        json.dump(data, fd)
+                for album_id in album_playthroughs:
+                    self.db.update_cell(
+                        table  = 'Album',
+                        column = 'fullPlaythroughs',
+                        primary_keys = { 'ID': album_playthroughs[ album_id ][ 'albumID' ] },
+                        new_value    = album_playthroughs[ album_id ][ 'playthroughs' ]
+                    )
 
                 break
 
