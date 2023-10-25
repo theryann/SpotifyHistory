@@ -795,6 +795,7 @@ class Analyzer:
 if __name__ == "__main__":
     flags: list = sys.argv[1:]
     debug: bool = '-d' in flags or '--debug' in flags
+    analyze: bool = '-a' in flags or '--analyze' in flags
 
     for user in tokens:
         songs = FetchSongs(user=user, debug=debug)
@@ -806,12 +807,13 @@ if __name__ == "__main__":
         songs.save_images_locally()
         songs.add_lyrics()
         # break
-
-    for user in tokens:
-        analyzer = Analyzer(user)
-        analyzer.rank_album_playthroughs()
-        # analyzer.get_general_genres()
-        # break
+    
+    if analyze:
+        for user in tokens:
+            analyzer = Analyzer(user)
+            analyzer.rank_album_playthroughs()
+            # analyzer.get_general_genres()
+            # break
 
 
 
