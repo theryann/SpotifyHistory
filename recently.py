@@ -747,6 +747,49 @@ class Analyzer:
 
         print("\n")
 
+    def get_general_genres(self):
+        """ make sense of the very specific genres Spotify provides """
+
+        general_genres : list = ['rock', 'metal', 'pop', 'rap', 'electronic', 'indie', 'classic', 'jazz', 'blues', 'hoerspiel']
+
+        def generalize(genre) -> str:
+            if genre in general_genres:
+                return genre
+
+            for part in reversed(genre.split(' ')):
+                if part in general_genres:
+                    return part
+
+            for g in general_genres:
+                if genre.endswith(g):
+                    return g
+
+
+            if genre.endswith('hardcore'): return 'metal'
+            if genre.endswith('punk'): return 'rock'
+            if genre.endswith('rock'): return 'rock'
+            if 'lo-fi' in genre: return 'electronic'
+            if genre.endswith('rave'): return 'electronic'
+            if genre.endswith('hip hop'): return 'rap'
+            if genre.endswith('alternative'): return 'indie'
+            if genre == 'schlager': return 'pop'
+            if genre == 'orchestra': return 'classic'
+            if genre == 'alt y': return 'indie'
+
+            for g in general_genres:
+                if g in genre:
+                    return g
+
+
+            return 'other'
+
+
+        genres: list = list( map( lambda g: g['genre'], self.db.get_all('SELECT DISTINCT genre FROM genre ORDER BY genre') ) )
+
+        for genre in genres:
+            print(f'{genre:30}\t\t\t {generalize(genre)}')
+
+
 
 
 if __name__ == "__main__":
@@ -767,6 +810,8 @@ if __name__ == "__main__":
     for user in tokens:
         analyzer = Analyzer(user)
         analyzer.rank_album_playthroughs()
+        # analyzer.get_general_genres()
+        # break
 
 
 
