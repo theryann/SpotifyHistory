@@ -250,7 +250,7 @@ class FetchSongs:
         print(f"\nadd album info... 100%", end="")
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
-            f"""
+                f"""
             select *
             from Song
             where
@@ -573,9 +573,12 @@ class FetchSongs:
                 return
 
             img_data = response.content
-
-            with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:  # this takes actual full path
-                handler.write(img_data)
+            
+            try:
+                with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:  # this takes actual full path
+                    handler.write(img_data)
+            except:
+                print('failed to save image to disc')
 
 
         # save ALBUM Cover
@@ -794,7 +797,7 @@ class Analyzer:
 
 if __name__ == "__main__":
     flags: list = sys.argv[1:]
-    debug: bool = '-d' in flags or '--debug' in flags
+    debug:   bool = '-d' in flags or '--debug'   in flags
     analyze: bool = '-a' in flags or '--analyze' in flags
 
     for user in tokens:
@@ -804,7 +807,7 @@ if __name__ == "__main__":
         songs.add_album_info()
         songs.add_artist_info()
         songs.add_audio_features()
-        songs.save_images_locally()
+        #songs.save_images_locally()
         songs.add_lyrics()
         # break
     
