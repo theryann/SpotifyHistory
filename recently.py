@@ -3,12 +3,12 @@ import time
 import json
 import sys
 
-
-from scrape_lyrics import retrieve_lyrics
+from datetime import datetime
 
 from credentials import tokens
 from refresh import TokenRefresh
 
+from scrape_lyrics import retrieve_lyrics
 from database import Database
 
 
@@ -381,6 +381,15 @@ class FetchSongs:
             with open('debug_artists.json', 'w', encoding='utf-8') as fd:
                 json.dump(response, fd, indent=4)
 
+        # prepare date of last update to be inserted
+        # Artist info can change over time. This should keep everything up to date
+        self.db.ensure_column(
+            table_name  = 'Artist',
+            column_name = 'lastUpdated',
+            data_type   = 'TEXT'
+        )
+        last_updated_now: str = datetime.now().strftime('%Y-%m-%d')
+
 
         for i, artist in enumerate(response["artists"]):
             # parse artist info
@@ -418,6 +427,14 @@ class FetchSongs:
                         "genre": genre
                     }
                 )
+
+            self.db.update_cell(
+                table = 'Artist',
+                column ='lastUpdated',
+                primary_keys = { "ID": artist_id },
+                new_value = last_updated_now
+            )
+
             print(f"\radd artist info... {int(i/len(response['artists'])*100) if i < len(response['artists'])-2 else 100}%", end="")
 
     def add_audio_features(self, song_number=50):
@@ -758,16 +775,16 @@ if __name__ == "__main__":
     debug:   bool = '-d' in flags or '--debug'   in flags
     analyze: bool = '-a' in flags or '--analyze' in flags
 
-    # for user in tokens:
-    #     songs = FetchSongs(user=user, debug=debug)
-    #     # songs.dsgvo_data_to_database('Streaming/')
-    #     songs.recent_songs_to_database()
-    #     songs.add_album_info()
-    #     songs.add_artist_info()
-    #     songs.add_audio_features()
-    #     #songs.save_images_locally()
-    #     songs.add_lyrics()
-    #     # break
+    for user in tokens:
+        songs = FetchSongs(user=user, debug=debug)
+        # songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
+        #songs.save_images_locally()
+        songs.add_lyrics()
+        # break
 
     if analyze:
         for user in tokens:
