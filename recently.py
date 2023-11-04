@@ -573,7 +573,7 @@ class FetchSongs:
                 return
 
             img_data = response.content
-            
+
             try:
                 with open(f'{local_path}images/{img_content}/{ img_link.split("/")[-1] }.jpg', 'wb') as handler:  # this takes actual full path
                     handler.write(img_data)
@@ -750,48 +750,6 @@ class Analyzer:
 
         print("\n")
 
-    def get_general_genres(self):
-        """ make sense of the very specific genres Spotify provides """
-
-        general_genres : list = ['rock', 'metal', 'pop', 'rap', 'electronic', 'indie', 'classic', 'jazz', 'blues', 'hoerspiel']
-
-        def generalize(genre) -> str:
-            if genre in general_genres:
-                return genre
-
-            for part in reversed(genre.split(' ')):
-                if part in general_genres:
-                    return part
-
-            for g in general_genres:
-                if genre.endswith(g):
-                    return g
-
-
-            if genre.endswith('hardcore'): return 'metal'
-            if genre.endswith('punk'): return 'rock'
-            if genre.endswith('rock'): return 'rock'
-            if 'lo-fi' in genre: return 'electronic'
-            if genre.endswith('rave'): return 'electronic'
-            if genre.endswith('hip hop'): return 'rap'
-            if genre.endswith('alternative'): return 'indie'
-            if genre == 'schlager': return 'pop'
-            if genre == 'orchestra': return 'classic'
-            if genre == 'alt y': return 'indie'
-
-            for g in general_genres:
-                if g in genre:
-                    return g
-
-
-            return 'other'
-
-
-        genres: list = list( map( lambda g: g['genre'], self.db.get_all('SELECT DISTINCT genre FROM genre ORDER BY genre') ) )
-
-        for genre in genres:
-            print(f'{genre:30}\t\t\t {generalize(genre)}')
-
 
 
 
@@ -800,23 +758,23 @@ if __name__ == "__main__":
     debug:   bool = '-d' in flags or '--debug'   in flags
     analyze: bool = '-a' in flags or '--analyze' in flags
 
-    for user in tokens:
-        songs = FetchSongs(user=user, debug=debug)
-        # songs.dsgvo_data_to_database('Streaming/')
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
-        #songs.save_images_locally()
-        songs.add_lyrics()
-        # break
-    
+    # for user in tokens:
+    #     songs = FetchSongs(user=user, debug=debug)
+    #     # songs.dsgvo_data_to_database('Streaming/')
+    #     songs.recent_songs_to_database()
+    #     songs.add_album_info()
+    #     songs.add_artist_info()
+    #     songs.add_audio_features()
+    #     #songs.save_images_locally()
+    #     songs.add_lyrics()
+    #     # break
+
     if analyze:
         for user in tokens:
             analyzer = Analyzer(user)
-            analyzer.rank_album_playthroughs()
-            # analyzer.get_general_genres()
-            # break
+            # analyzer.rank_album_playthroughs()
+            analyzer.get_general_genres()
+            break
 
 
 
