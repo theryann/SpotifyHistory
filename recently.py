@@ -356,6 +356,14 @@ class FetchSongs:
     def add_artist_info(self, artist_number=50):
         print(f"\nadd artist info... 100%", end="")
 
+        # prepare date of last update to be inserted
+        # Artist info can change over time. This should keep everything up to date
+        self.db.ensure_column(
+            table_name  = 'Artist',
+            column_name = 'lastUpdated',
+            data_type   = 'TEXT'
+        )
+
         last_updated_now: str = datetime.now().strftime('%Y-%m-%d')
 
         # get ids
@@ -387,14 +395,6 @@ class FetchSongs:
         if self.debug:
             with open('debug_artists.json', 'w', encoding='utf-8') as fd:
                 json.dump(response, fd, indent=4)
-
-        # prepare date of last update to be inserted
-        # Artist info can change over time. This should keep everything up to date
-        self.db.ensure_column(
-            table_name  = 'Artist',
-            column_name = 'lastUpdated',
-            data_type   = 'TEXT'
-        )
 
 
         for i, artist in enumerate(response["artists"]):
