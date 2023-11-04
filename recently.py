@@ -373,7 +373,9 @@ class FetchSongs:
             from Artist
             where imgBig is null
                   or
-                  lastUpdated < '{last_updated_now}' is null
+                  lastUpdated < '{last_updated_now}'
+                  or
+                  lastUpdated is null
             limit {artist_number}"""
         )
 
