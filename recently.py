@@ -356,10 +356,17 @@ class FetchSongs:
     def add_artist_info(self, artist_number=50):
         print(f"\nadd artist info... 100%", end="")
 
+        last_updated_now: str = datetime.now().strftime('%Y-%m-%d')
 
         # get ids
         rows = self.db.get_all(
-            f"""select * from Artist where imgBig is null limit {artist_number}"""
+            f"""
+            select *
+            from Artist
+            where imgBig is null
+                  or
+                  lastUpdated < '{last_updated_now}'
+            limit {artist_number}"""
         )
 
         if rows == []:
@@ -388,7 +395,6 @@ class FetchSongs:
             column_name = 'lastUpdated',
             data_type   = 'TEXT'
         )
-        last_updated_now: str = datetime.now().strftime('%Y-%m-%d')
 
 
         for i, artist in enumerate(response["artists"]):
