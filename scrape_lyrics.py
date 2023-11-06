@@ -36,6 +36,7 @@ def retrieve_lyrics(artistname, songname, verbose=False):
         ['?',  ''],
         ['!',  ''],
         ['&',  'and'],
+        ['ï', 'i'],
         ['ü', 'u'],
         ['ä', 'a'],
         ['ö', 'o']

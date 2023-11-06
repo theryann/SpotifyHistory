@@ -576,7 +576,7 @@ class FetchSongs:
             print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
 
             time.sleep(.2)
-        print('n')
+        print('')
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
