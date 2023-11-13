@@ -685,7 +685,10 @@ class FetchSongs:
         it is not checked wether a UUID exists already because they are uique for all intents and purposes
         """
 
+        ##################
         # UUIDS for Songs
+        ##################
+
         self.db.ensure_column(
             table_name  = 'Song',
             column_name = 'UUID',
@@ -697,16 +700,12 @@ class FetchSongs:
             FROM Song
             JOIN writtenBy ON writtenBy.songID = Song.ID
             WHERE Song.UUID IS NULL
-            --ORDER BY title
             LIMIT 500
         """)
 
 
         for song in songs_without_uuid:
             unique_id: str = uuid.uuid4().hex
-
-            # the normal update function cannot be used since the identifying column 'artistID' don't exist in table 'Song'.
-            # Because of that a list of sing IDs that all point to the same song needs to be generated.
 
             song_title = self.db.stringify( song['title'] )
 
@@ -722,6 +721,44 @@ class FetchSongs:
                         writtenBy.artistID = '{song['artistID']}'
                         AND
                         title = {song_title}
+                )
+                """
+            )
+
+        ##################
+        # UUIDS for Albums
+        ##################
+
+        self.db.ensure_column(
+            table_name  = 'Album',
+            column_name = 'UUID',
+            data_type = 'TEXT'
+        )
+
+        albums_without_uuid = self.db.get_all(f"""
+            SELECT DISTINCT name, artistID
+            FROM Album
+            WHERE Album.UUID IS NULL
+            LIMIT 500
+        """)
+
+
+        for album in albums_without_uuid:
+            unique_id: str = uuid.uuid4().hex
+
+            album_name = self.db.stringify( album['name'] )
+
+            self.db.update_cell(
+                table  = 'Album',
+                column = 'UUID',
+                new_value = unique_id,
+                where = f""" ID IN (
+                    SELECT ID
+                    FROM Album
+                    WHERE
+                        artistID = '{album['artistID']}'
+                        AND
+                        name = {album_name}
                 )
                 """
             )
