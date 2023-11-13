@@ -1,6 +1,7 @@
 import requests
 import time
 import json
+import uuid
 import sys
 
 from datetime import datetime
@@ -678,6 +679,57 @@ class FetchSongs:
             print(f"\rdownload artist pics... {int(i/len(artist_rows)*100) if i < len(artist_rows)-2 else 100}%", end="")
             i += 1
 
+    def assign_uuids(self) -> None:
+        """
+        assigns unique IDs (UUIDs) to Songs and Albums so different Versions can be counted as one Song/Album
+        it is not checked wether a UUID exists already because they are uique for all intents and purposes
+        """
+
+        # UUIDS for Songs
+        self.db.ensure_column(
+            table_name  = 'Song',
+            column_name = 'UUID',
+            data_type = 'TEXT'
+        )
+
+        songs_without_uuid = self.db.get_all(f"""
+            SELECT DISTINCT title, artistID
+            FROM Song
+            JOIN writtenBy ON writtenBy.songID = Song.ID
+            WHERE Song.UUID IS NULL
+            --ORDER BY title
+            LIMIT 500
+        """)
+
+
+        for song in songs_without_uuid:
+            unique_id: str = uuid.uuid4().hex
+
+            # the normal update function cannot be used since the identifying column 'artistID' don't exist in table 'Song'.
+            # Because of that a list of sing IDs that all point to the same song needs to be generated.
+
+            song_title = self.db.stringify( song['title'] )
+
+            self.db.update_cell(
+                table  = 'Song',
+                column = 'UUID',
+                new_value = unique_id,
+                where = f""" ID IN (
+                    SELECT ID
+                    FROM Song
+                    JOIN writtenBy ON writtenBy.songID = Song.ID
+                    WHERE
+                        writtenBy.artistID = '{song['artistID']}'
+                        AND
+                        title = {song_title}
+                )
+                """
+            )
+
+
+
+
+
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
 
@@ -785,14 +837,15 @@ if __name__ == "__main__":
 
     for user in tokens:
         songs = FetchSongs(user=user, debug=debug)
-        # songs.dsgvo_data_to_database('Streaming/')
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
-        #songs.save_images_locally()
-        songs.add_lyrics()
-        # break
+        # # songs.dsgvo_data_to_database('Streaming/')
+        # songs.recent_songs_to_database()
+        # songs.add_album_info()
+        # songs.add_artist_info()
+        # songs.add_audio_features()
+        # #songs.save_images_locally()
+        songs.assign_uuids()
+        # songs.add_lyrics()
+        break
 
     if analyze:
         for user in tokens:
