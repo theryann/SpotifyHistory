@@ -684,13 +684,17 @@ class FetchSongs:
         assigns unique IDs (UUIDs) to Songs and Albums so different Versions can be counted as one Song/Album
         it is not checked wether a UUID exists already because they are uique for all intents and purposes
         """
+        print(f"\nadd UUIDs...100%", end="")
+        num_cells_updated: int = 0
 
-        ##################
-        # UUIDS for Songs
-        ##################
 
         self.db.ensure_column(
             table_name  = 'Song',
+            column_name = 'UUID',
+            data_type = 'TEXT'
+        )
+        self.db.ensure_column(
+            table_name  = 'Album',
             column_name = 'UUID',
             data_type = 'TEXT'
         )
@@ -703,7 +707,16 @@ class FetchSongs:
             LIMIT 500
         """)
 
+        albums_without_uuid = self.db.get_all(f"""
+            SELECT DISTINCT name, artistID
+            FROM Album
+            WHERE Album.UUID IS NULL
+            LIMIT 500
+        """)
 
+        ##################
+        # UUIDS for Songs
+        ##################
         for song in songs_without_uuid:
             unique_id: str = uuid.uuid4().hex
 
@@ -725,24 +738,14 @@ class FetchSongs:
                 """
             )
 
+            num_cells_updated += 1
+            if num_cells_updated % 50 == 0:
+                print(f"\radd UUIDs... {num_cells_updated/10}%", end="")
+
+
         ##################
         # UUIDS for Albums
         ##################
-
-        self.db.ensure_column(
-            table_name  = 'Album',
-            column_name = 'UUID',
-            data_type = 'TEXT'
-        )
-
-        albums_without_uuid = self.db.get_all(f"""
-            SELECT DISTINCT name, artistID
-            FROM Album
-            WHERE Album.UUID IS NULL
-            LIMIT 500
-        """)
-
-
         for album in albums_without_uuid:
             unique_id: str = uuid.uuid4().hex
 
@@ -763,9 +766,10 @@ class FetchSongs:
                 """
             )
 
-
-
-
+            num_cells_updated += 1
+            if num_cells_updated % 50 == 0:
+                print(f"\radd UUIDs... {num_cells_updated/10}%", end="")
+        print('\n')
 
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
@@ -874,22 +878,20 @@ if __name__ == "__main__":
 
     for user in tokens:
         songs = FetchSongs(user=user, debug=debug)
-        # # songs.dsgvo_data_to_database('Streaming/')
-        # songs.recent_songs_to_database()
-        # songs.add_album_info()
-        # songs.add_artist_info()
-        # songs.add_audio_features()
-        # #songs.save_images_locally()
+        # songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
+        #songs.save_images_locally()
         songs.assign_uuids()
-        # songs.add_lyrics()
+        songs.add_lyrics()
         break
 
     if analyze:
         for user in tokens:
             analyzer = Analyzer(user)
-            # analyzer.rank_album_playthroughs()
-            analyzer.get_general_genres()
-            break
+            analyzer.rank_album_playthroughs()
 
 
 
