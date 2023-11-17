@@ -475,6 +475,10 @@ class FetchSongs:
                 json.dump(response, fd, indent=4)
 
         for i, song in enumerate(response["audio_features"]):
+
+            if song is None:
+                continue
+
             if "id" not in song:
                 continue
 
@@ -886,7 +890,6 @@ if __name__ == "__main__":
         #songs.save_images_locally()
         songs.assign_uuids()
         songs.add_lyrics()
-        break
 
     if analyze:
         for user in tokens:
