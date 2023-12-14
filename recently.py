@@ -811,7 +811,7 @@ class Analyzer:
         JOIN Album ON Album.ID = Song.albumID
         WHERE Album.type != 'single'
         ORDER BY timeStamp
-        LIMIT 100
+        LIMIT 1000
         OFFSET {}
         """
         album_playthroughs: dict = {}
@@ -822,6 +822,9 @@ class Analyzer:
         row_count: int = self.db.get_all("SELECT count(*) as 'rows' FROM Stream")[0]['rows']
 
         while True:
+            del self.db
+            self.db: Database = Database(f"{self.user}.db")
+
             rows: dict = self.db.get_all( query.format(offset) )
 
             if rows == []:
@@ -867,7 +870,7 @@ class Analyzer:
                     else:
                         curr_album = stream
 
-            offset += 100
+            offset += 1000
             print(f'\r[{self.user}] rank album playhroughs {offset/row_count*100:.2f}%', end='')
 
         print("\n")
