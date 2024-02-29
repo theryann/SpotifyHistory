@@ -160,7 +160,13 @@ class FetchSongs:
         # insert data
         import os
 
-        files: list = [ os.path.join(path, file) for file in os.listdir(path) if os.path.splitext(file)[1] == '.json' and not 'Video' in file ]
+        files: list = [
+            os.path.join(path, file)
+            for file in os.listdir(path)
+                if os.path.splitext(file)[1] == '.json'
+                and
+                not 'Video' in file
+        ]
         estimated_items: int = None
         items_in_one_file: int = None
 
