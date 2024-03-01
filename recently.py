@@ -539,9 +539,8 @@ class FetchSongs:
             )
             print(f"\radd audio features... {int(i/len(response['audio_features'])*100) if i < len(response['audio_features'])-2 else 100}%", end="")
 
-    def add_audio_analysis(self, song_number=10):
+    def add_audio_analysis(self, song_number=20):
         print(f"\nadd audio grid features ... 0%\t", end="")
-
 
         # get songs that don't appear in the AudioGrid table
         rows = self.db.get_all(
@@ -560,7 +559,37 @@ class FetchSongs:
 
         song_ids: list[str] = [ row['songID'] for row in rows ]
 
+        def gen_sql_insert_many(values: list[dict]) -> None:
+            if len(values) == 0:
+                return ''
+
+            col_names = [col for col in values[0]]
+
+            statement = """INSERT INTO AudioGrid"""
+            statement += f"\n ({','.join(col_names)})"
+            statement += "\nVALUES\n"
+
+            for i, row in enumerate(values):
+                statement += '('
+                statement += ','.join([
+                    f"'{row[col]}'"
+                    if isinstance(row[col], str)
+                    else str(row[col])
+                    for col in col_names
+                ])
+
+                statement += ')'
+                if i < len(values) - 1:
+                    statement += ',\n'
+
+            return statement
+
+
         for i, song_id in enumerate( song_ids ):
+            bars:  list[dict] = []
+            beats: list[dict] = []
+            sections: list[dict] = []
+            segments: list[dict] = []
 
             # Spotify API Call
             query = f"https://api.spotify.com/v1/audio-analysis/{song_id}"
@@ -573,7 +602,7 @@ class FetchSongs:
                 }
             )
 
-            #  handle bad response
+            # handle bad response
             if not response.status_code == 200:
                 print('[CAUTION] fetching audio analysis data resulted in status code', response.status_code)
 
@@ -584,66 +613,61 @@ class FetchSongs:
 
             data = response.json()
 
-            # insert bars
+            # collect bars
             for bar in data['bars']:
-                self.db.insert_row(
-                    table='AudioGrid',
-                    row={
-                        'songID':   song_id,
-                        'type':     'bar',
-                        'start':    bar['start'],
-                        'durationSec':  bar['duration'],
-                        'confidence':   bar['confidence'],
-                    }
-                )
+                bars.append({
+                    'songID':   song_id,
+                    'type':     'bar',
+                    'start':    bar['start'],
+                    'durationSec':  bar['duration'],
+                    'confidence':   bar['confidence'],
+                })
 
-            # insert beats
+            # collect beats
             for beat in data['beats']:
-                self.db.insert_row(
-                    table='AudioGrid',
-                    row={
-                        'songID':   song_id,
-                        'type':     'beat',
-                        'start':    beat['start'],
-                        'durationSec':  beat['duration'],
-                        'confidence':   beat['confidence'],
-                    }
-                )
+                beats.append({
+                    'songID':   song_id,
+                    'type':     'beat',
+                    'start':    beat['start'],
+                    'durationSec':  beat['duration'],
+                    'confidence':   beat['confidence'],
+                })
 
-            # insert sections
+            # collect sections
             for section in data['sections']:
-                self.db.insert_row(
-                    table='AudioGrid',
-                    row={
-                        'songID':   song_id,
-                        'type':     'section',
-                        'start':    section['start'],
-                        'durationSec':   section['duration'],
-                        'confidence':    section['confidence'],
-                        'loudness':      section['loudness'],
-                        'tempo':         section['tempo'],
-                        'key':           section['key'],
-                        'mode':          section['mode'],
-                        'timeSignature': section['time_signature'],
-                    }
-                )
+                sections.append({
+                    'songID':   song_id,
+                    'type':     'section',
+                    'start':    section['start'],
+                    'durationSec':   section['duration'],
+                    'confidence':    section['confidence'],
+                    'loudness':      section['loudness'],
+                    'tempo':         section['tempo'],
+                    'key':           section['key'],
+                    'mode':          section['mode'],
+                    'timeSignature': section['time_signature'],
+                })
 
-            # insert segments
+            # collect segments
             for segment in data['segments']:
-                self.db.insert_row(
-                    table='AudioGrid',
-                    row={
-                        'songID':       song_id,
-                        'type':         'segment',
-                        'start':        segment['start'],
-                        'durationSec':  segment['duration'],
-                        'confidence':   segment['confidence'],
-                        'loudnessStartSec':     segment['loudness_start'],
-                        'loudnessMax':          segment['loudness_max'],
-                        'loudnessMaxTimeSec':   segment['loudness_max_time'],
-                        'loudnessEnd':          segment['loudness_end'],
-                    }
-                )
+                segments.append({
+                    'songID':       song_id,
+                    'type':         'segment',
+                    'start':        segment['start'],
+                    'durationSec':  segment['duration'],
+                    'confidence':   segment['confidence'],
+                    'loudnessStartSec':     segment['loudness_start'],
+                    'loudnessMax':          segment['loudness_max'],
+                    'loudnessMaxTimeSec':   segment['loudness_max_time'],
+                    'loudnessEnd':          segment['loudness_end'],
+                })
+
+            # inserting data
+            self.db.execute( gen_sql_insert_many(bars) )
+            self.db.execute( gen_sql_insert_many(beats) )
+            self.db.execute( gen_sql_insert_many(segments) )
+            self.db.execute( gen_sql_insert_many(sections) )
+
             print(f"\radd audio grid features ... {round((i+1)/len(song_ids)*100) if i < len(song_ids)-1 else 100 }%\t", end="")
 
     def add_lyrics(self, song_number=30):
