@@ -604,13 +604,20 @@ class FetchSongs:
 
             # handle bad response
             if not response.status_code == 200:
+
+                if response.status_code == 504:
+                    # happens a lot.
+                    # Spotify can't deliver the detailed analysis on time
+                    # so the timeout expires. Just retry later
+                    continue
+
                 print('[CAUTION] fetching audio analysis data resulted in status code', response.status_code)
                 print('songID:', song_id)
                 print(response.text)
 
                 if self.debug:
                     with open(f'debug_audio-analysis_{song_id}.json', 'w', encoding='utf-8') as fd:
-                        json.dump(response.json(), fd, indent=4)
+                        json.dump(response.text, fd, indent=4)
                 continue
 
             data = response.json()
