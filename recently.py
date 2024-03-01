@@ -537,7 +537,7 @@ class FetchSongs:
                 primary_keys = { "ID" : song_id },
                 new_value = energy
             )
-            print(f"\radd audio features... {int(i/len(response['audio_features'])*100) if i < len(response['audio_features'])-2 else 100}%", end="")
+            print(f"\radd audio features... {int(i/len(response['audio_features'])*100) if i < len(response['audio_features'])-2 else 100}\t\t%", end="")
 
     def add_audio_analysis(self, song_number=20):
         print(f"\nadd audio grid features ... 0%\t", end="")
@@ -548,7 +548,7 @@ class FetchSongs:
             SELECT ID as songID
             FROM Song
             WHERE Song.ID NOT IN (
-                SELECT songID
+                SELECT DISTINCT songID
                 FROM AudioGrid
             )
             LIMIT {song_number}"""
@@ -605,6 +605,8 @@ class FetchSongs:
             # handle bad response
             if not response.status_code == 200:
                 print('[CAUTION] fetching audio analysis data resulted in status code', response.status_code)
+                print('songID:', song_id)
+                print(response.text)
 
                 if self.debug:
                     with open(f'debug_audio-analysis_{song_id}.json', 'w', encoding='utf-8') as fd:
@@ -671,8 +673,7 @@ class FetchSongs:
             print(f"\radd audio grid features ... {round((i+1)/len(song_ids)*100) if i < len(song_ids)-1 else 100 }%\t", end="")
 
     def add_lyrics(self, song_number=30):
-        print(f"\nadd lyrics info... 100%", end="")
-
+        print(f"\nadd lyrics info... 0%", end="")
 
         # get songs with trackNumber is NULL. These songs dont have an album associated with them
         rows = self.db.get_all(
@@ -717,10 +718,9 @@ class FetchSongs:
             )
 
             used_ids.append(song["ID"])
-            print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%", end="")
+            print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%\t\t", end="")
 
             time.sleep(.2)
-        print('\n')
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
@@ -1025,16 +1025,18 @@ if __name__ == "__main__":
 
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
-        # #songs.dsgvo_data_to_database('Streaming/')
-        # songs.recent_songs_to_database()
-        # songs.add_album_info()
-        # songs.add_artist_info()
-        # songs.add_audio_features()
+        #songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
         songs.add_audio_analysis()
-        # #songs.save_images_locally()
-        # songs.assign_uuids()
-        # songs.add_lyrics()
-        break
+        #songs.save_images_locally()
+        songs.assign_uuids()
+        songs.add_lyrics()
+
+        if debug:
+            break
 
     if analyze:
         for user in tokens:
