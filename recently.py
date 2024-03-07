@@ -1001,14 +1001,14 @@ if __name__ == "__main__":
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
         #songs.dsgvo_data_to_database('Streaming/')
-        # songs.recent_songs_to_database()
-        # songs.add_album_info()
-        # songs.add_artist_info()
-        # songs.add_audio_features()
+        songs.recent_songs_to_database()
+        songs.add_album_info()
+        songs.add_artist_info()
+        songs.add_audio_features()
         songs.add_audio_analysis()
         #songs.save_images_locally()
-        # songs.assign_uuids()
-        # songs.add_lyrics()
+        songs.assign_uuids()
+        songs.add_lyrics()
 
         if debug:
             break
