@@ -694,7 +694,7 @@ class FetchSongs:
             )
 
             used_ids.append(song["ID"])
-            print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else 100}%\t\t", end="")
+            print(f"\radd lyrics info... {int(i/len(rows)*100) if i < len(rows)-2 else '100\n'}%\t\t", end="")
 
             time.sleep(.2)
 
@@ -888,7 +888,6 @@ class FetchSongs:
             num_cells_updated += 1
             if num_cells_updated % 50 == 0:
                 print(f"\radd UUIDs... {num_cells_updated/10}%", end="")
-        print('\n')
 
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
