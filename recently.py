@@ -694,7 +694,7 @@ class FetchSongs:
             )
 
             used_ids.append(song["ID"])
-            print(f"\radd lyrics info... " + int(i/len(rows)*100) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
+            print(f"\radd lyrics info... " + str(int(i/len(rows)*100)) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
 
             time.sleep(.2)
 
