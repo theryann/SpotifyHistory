@@ -13,3 +13,5 @@ initial_api_tokens.py
 *.db-journal
 inspect.sh
 *.swp
+*.sql
+

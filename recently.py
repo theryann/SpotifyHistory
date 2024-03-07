@@ -542,14 +542,16 @@ class FetchSongs:
     def add_audio_analysis(self, song_number=20):
         print(f"\nadd audio grid features ... 0%\t", end="")
 
-        # get songs that don't appear in the AudioGrid table
+        # get songs that don't appear in the Sections table
+        # those songs won't appear in the other audio tables as well
+        # Sections is just the shortest
         rows = self.db.get_all(
             f"""
             SELECT ID as songID
             FROM Song
             WHERE Song.ID NOT IN (
                 SELECT DISTINCT songID
-                FROM AudioGrid
+                FROM Sections
             )
             LIMIT {song_number}"""
         )
@@ -558,31 +560,6 @@ class FetchSongs:
             return
 
         song_ids: list[str] = [ row['songID'] for row in rows ]
-
-        def gen_sql_insert_many(values: list[dict]) -> None:
-            if len(values) == 0:
-                return ''
-
-            col_names = [col for col in values[0]]
-
-            statement = """INSERT INTO AudioGrid"""
-            statement += f"\n ({','.join(col_names)})"
-            statement += "\nVALUES\n"
-
-            for i, row in enumerate(values):
-                statement += '('
-                statement += ','.join([
-                    f"'{row[col]}'"
-                    if isinstance(row[col], str)
-                    else str(row[col])
-                    for col in col_names
-                ])
-
-                statement += ')'
-                if i < len(values) - 1:
-                    statement += ',\n'
-
-            return statement
 
 
         for i, song_id in enumerate( song_ids ):
@@ -626,30 +603,24 @@ class FetchSongs:
             for bar in data['bars']:
                 bars.append({
                     'songID':   song_id,
-                    'type':     'bar',
                     'start':    bar['start'],
                     'durationSec':  bar['duration'],
-                    'confidence':   bar['confidence'],
                 })
 
             # collect beats
             for beat in data['beats']:
                 beats.append({
                     'songID':   song_id,
-                    'type':     'beat',
                     'start':    beat['start'],
                     'durationSec':  beat['duration'],
-                    'confidence':   beat['confidence'],
                 })
 
             # collect sections
             for section in data['sections']:
                 sections.append({
                     'songID':   song_id,
-                    'type':     'section',
                     'start':    section['start'],
                     'durationSec':   section['duration'],
-                    'confidence':    section['confidence'],
                     'loudness':      section['loudness'],
                     'tempo':         section['tempo'],
                     'key':           section['key'],
@@ -661,10 +632,8 @@ class FetchSongs:
             for segment in data['segments']:
                 segments.append({
                     'songID':       song_id,
-                    'type':         'segment',
                     'start':        segment['start'],
                     'durationSec':  segment['duration'],
-                    'confidence':   segment['confidence'],
                     'loudnessStartSec':     segment['loudness_start'],
                     'loudnessMax':          segment['loudness_max'],
                     'loudnessMaxTimeSec':   segment['loudness_max_time'],
@@ -672,10 +641,10 @@ class FetchSongs:
                 })
 
             # inserting data
-            self.db.execute( gen_sql_insert_many(bars) )
-            self.db.execute( gen_sql_insert_many(beats) )
-            self.db.execute( gen_sql_insert_many(segments) )
-            self.db.execute( gen_sql_insert_many(sections) )
+            self.db.insert_many('Bars', bars)
+            self.db.insert_many('Beats', beats)
+            self.db.insert_many('Segments', segments)
+            self.db.insert_many('Sections', sections)
 
             print(f"\radd audio grid features ... {round((i+1)/len(song_ids)*100) if i < len(song_ids)-1 else 100 }%\t", end="")
 
@@ -1033,14 +1002,14 @@ if __name__ == "__main__":
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
         #songs.dsgvo_data_to_database('Streaming/')
-        songs.recent_songs_to_database()
-        songs.add_album_info()
-        songs.add_artist_info()
-        songs.add_audio_features()
+        # songs.recent_songs_to_database()
+        # songs.add_album_info()
+        # songs.add_artist_info()
+        # songs.add_audio_features()
         songs.add_audio_analysis()
         #songs.save_images_locally()
-        songs.assign_uuids()
-        songs.add_lyrics()
+        # songs.assign_uuids()
+        # songs.add_lyrics()
 
         if debug:
             break
