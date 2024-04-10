@@ -4,7 +4,7 @@ import json
 import uuid
 import sys
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from credentials import tokens
 from refresh import TokenRefresh
@@ -373,7 +373,8 @@ class FetchSongs:
             data_type   = 'TEXT'
         )
 
-        last_updated_now: str = datetime.now().strftime('%Y-%m-%d')
+        current_timedelta: str = datetime.now().strftime('%Y-%m-%d')
+        oldest_timestamp:  str = ( datetime.now() - timedelta(100) ).strftime('%F') # 100 days is the oldest that artist information shall be
 
         # get ids
         rows = self.db.get_all(
@@ -382,7 +383,7 @@ class FetchSongs:
             from Artist
             where imgBig is null
                   or
-                  lastUpdated < '{last_updated_now}'
+                  lastUpdated < '{oldest_timestamp}'
                   or
                   lastUpdated is null
             limit {artist_number}"""
@@ -449,7 +450,7 @@ class FetchSongs:
                 table = 'Artist',
                 column ='lastUpdated',
                 primary_keys = { "ID": artist_id },
-                new_value = last_updated_now
+                new_value = current_timedelta
             )
 
             print(f"\radd artist info... {int(i/len(response['artists'])*100) if i < len(response['artists'])-2 else 100}%", end="")
@@ -694,7 +695,7 @@ class FetchSongs:
             )
 
             used_ids.append(song["ID"])
-            print(f"\radd lyrics info... " + int(i/len(rows)*100) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
+            print(f"\radd lyrics info... " + str(int(i/len(rows)*100)) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
 
             time.sleep(.2)
 
@@ -1003,7 +1004,10 @@ if __name__ == "__main__":
         #songs.dsgvo_data_to_database('Streaming/')
         songs.recent_songs_to_database()
         songs.add_album_info()
-        songs.add_artist_info()
+
+        for _ in range(10):
+            songs.add_artist_info()
+
         songs.add_audio_features()
         songs.add_audio_analysis()
         #songs.save_images_locally()
