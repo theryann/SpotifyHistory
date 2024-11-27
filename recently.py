@@ -457,11 +457,18 @@ class FetchSongs:
         song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
         query = f'https://api.spotify.com/v1/audio-features?ids={song_ids}'
 
-        response = requests.get( query, headers=self.authentication_headers ).json()
+        res: requests.Response = requests.get( query, headers=self.authentication_headers )
 
-        if self.debug:
-            with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
-                json.dump(response, fd, indent=4)
+        if res.status_code != 200:
+            print('[CAUTION] fetching audio features resulted in status code', res.status_code)
+            print(res.text)
+
+            if self.debug:
+                with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
+                    json.dump(res, fd, indent=4)
+            return
+
+        response: dict = res.json()
 
         for i, song in enumerate(response["audio_features"]):
 
