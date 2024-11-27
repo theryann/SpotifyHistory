@@ -30,6 +30,10 @@ class FetchSongs:
         if not self.offline:
             Refresher = TokenRefresh(user)
             self.spotify_token = Refresher.refresh_spotify_token()  # update the API access token for the Spotify API (is only valid for an hour each time)
+            self.authentication_headers = {
+                "Content-Type" :  "application/json",
+                "Authorization": f"Bearer {self.spotify_token}"
+            }
 
         self.db = Database(f"{user}.db")
 
@@ -39,13 +43,7 @@ class FetchSongs:
 
         query = f'https://api.spotify.com/v1/me/player/recently-played?limit={song_number}'
 
-        response = requests.get(
-            query,
-            headers = {
-                "Content-Type" :  "application/json",
-                "Authorization": f"Bearer {self.spotify_token}"
-            }
-        ).json()
+        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_recently-played.json', 'w', encoding='utf-8') as fd:
@@ -277,13 +275,7 @@ class FetchSongs:
 
         query = f'https://api.spotify.com/v1/tracks?ids={song_ids}'
 
-        response = requests.get(
-            query,
-            headers = {
-                "Content-Type" : "application/json",
-                "Authorization": f"Bearer {self.spotify_token}"
-            }
-        ).json()
+        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_tracks.json', 'w', encoding='utf-8') as fd:
@@ -396,13 +388,7 @@ class FetchSongs:
         artist_ids = ','.join([artist["ID"] for artist in rows]) # string of artist IDS
         query = f'https://api.spotify.com/v1/artists?ids={artist_ids}'
 
-        response = requests.get(
-            query,
-            headers = {
-                "Content-Type" : "application/json",
-                "Authorization": f"Bearer {self.spotify_token}"
-            }
-        ).json()
+        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_artists.json', 'w', encoding='utf-8') as fd:
@@ -471,13 +457,7 @@ class FetchSongs:
         song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
         query = f'https://api.spotify.com/v1/audio-features?ids={song_ids}'
 
-        response = requests.get(
-            query,
-            headers = {
-                "Content-Type" : "application/json",
-                "Authorization": f"Bearer {self.spotify_token}"
-            }
-        ).json()
+        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
@@ -572,13 +552,7 @@ class FetchSongs:
             # Spotify API Call
             query = f"https://api.spotify.com/v1/audio-analysis/{song_id}"
 
-            response: requests.Response = requests.get(
-                query,
-                headers = {
-                    "Content-Type" : "application/json",
-                    "Authorization": f"Bearer {self.spotify_token}"
-                }
-            )
+            response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
 
             # handle bad response
             if not response.status_code == 200:
