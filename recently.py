@@ -43,7 +43,7 @@ class FetchSongs:
 
         query = f'https://api.spotify.com/v1/me/player/recently-played?limit={song_number}'
 
-        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
+        response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_recently-played.json', 'w', encoding='utf-8') as fd:
@@ -72,8 +72,8 @@ class FetchSongs:
             album_release_date = song['track']['album']['release_date']
 
            # artist info
-            song_artists    = song['track']['artists']  # LIST of all artists that made this song
-            album_artist_id = song['track']['album']['artists'][0]['id']  # PRIMARY artist who made this album
+            song_artists: list   = song['track']['artists']  # LIST of all artists that made this song
+            album_artist_id: str = song['track']['album']['artists'][0]['id']  # PRIMARY artist who made this album
 
             ### insert data in databse ###
             # enter stream infos
@@ -275,7 +275,7 @@ class FetchSongs:
 
         query = f'https://api.spotify.com/v1/tracks?ids={song_ids}'
 
-        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
+        response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_tracks.json', 'w', encoding='utf-8') as fd:
@@ -388,7 +388,7 @@ class FetchSongs:
         artist_ids = ','.join([artist["ID"] for artist in rows]) # string of artist IDS
         query = f'https://api.spotify.com/v1/artists?ids={artist_ids}'
 
-        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
+        response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_artists.json', 'w', encoding='utf-8') as fd:
@@ -457,7 +457,7 @@ class FetchSongs:
         song_ids = ','.join([song["ID"] for song in rows]) # string of song IDS
         query = f'https://api.spotify.com/v1/audio-features?ids={song_ids}'
 
-        response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
+        response = requests.get( query, headers=self.authentication_headers ).json()
 
         if self.debug:
             with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
@@ -552,7 +552,7 @@ class FetchSongs:
             # Spotify API Call
             query = f"https://api.spotify.com/v1/audio-analysis/{song_id}"
 
-            response: requests.Response = requests.get( query, headers=self.authentication_headers ).json()
+            response: requests.Response = requests.get( query, headers=self.authentication_headers )
 
             # handle bad response
             if not response.status_code == 200:
@@ -572,7 +572,7 @@ class FetchSongs:
                         json.dump(response.text, fd, indent=4)
                 continue
 
-            data = response.json()
+            data: dict = response.json()
 
             # collect bars
             for bar in data['bars']:
@@ -672,6 +672,65 @@ class FetchSongs:
             print(f"\radd lyrics info... " + str(int(i/len(rows)*100)) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
 
             time.sleep(.2)
+
+    def add_songs_to_writtenby_table(self, song_number=50):
+        print(f"\nadd songs and artists to writtenBy table... 100%", end="")
+
+        rows = self.db.get_all(
+            f"""
+            select Song.ID
+            from Song
+            where Song.ID NOT IN (select songID from writtenBy)
+            limit {song_number}"""
+        )
+
+        if rows == []:
+            return
+
+        # spotify API request for multiple tracks
+        song_ids: str = ','.join([song["ID"] for song in rows]) # string of song IDS
+
+        query = f'https://api.spotify.com/v1/tracks?ids={song_ids}'
+
+        res: requests.Response = requests.get( query, headers=self.authentication_headers )
+
+        if res.status_code != 200:
+            print('[CAUTION] fetching track data for writtenby table resulted in staus code:', res.status_code)
+            print(res)
+            return
+
+        response: dict = res.json()
+
+        if self.debug:
+            with open('debug_tracks_not_in_writtenby_table.json', 'w', encoding='utf-8') as fd:
+                json.dump(response, fd, indent=4)
+
+        for i, song in enumerate(response['tracks']):
+            song_id = song['id']
+            song_artists: list[dict]   = song['artists']  # LIST of all artists that made this song
+
+            ### insert data in databse ###
+
+            # enter artist infos
+            for artist in song_artists:
+                # artist info
+                self.db.insert_row(
+                    table = "Artist",
+                    row = {
+                        "ID" : artist["id"],
+                        "name" : artist["name"]
+                    }
+                )
+                # song written by assotiation
+                self.db.insert_row(
+                    table = "writtenBy",
+                    row = {
+                        "songID" : song_id,
+                        "artistID" : artist["id"]
+                    }
+                )
+            print(f"\radd songs and artists to writtenBy table... {int(i/len(response['tracks'])*100) if i < len(response['tracks'])-2 else 100}%", end="")
+
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
@@ -977,6 +1036,7 @@ if __name__ == "__main__":
         songs = FetchSongs(user=user, offline=offline, debug=debug)
         #songs.dsgvo_data_to_database('Streaming/')
         songs.recent_songs_to_database()
+        songs.add_songs_to_writtenby_table()
         songs.add_album_info()
 
         for _ in range(10):
@@ -985,7 +1045,7 @@ if __name__ == "__main__":
         songs.add_audio_features()
         songs.add_audio_analysis()
         #songs.save_images_locally()
-        songs.assign_uuids()
+        #songs.assign_uuids()
         songs.add_lyrics()
 
         if debug:
