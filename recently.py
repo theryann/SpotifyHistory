@@ -466,6 +466,7 @@ class FetchSongs:
             if self.debug:
                 with open('debug_audio-features.json', 'w', encoding='utf-8') as fd:
                     json.dump(res, fd, indent=4)
+            print() # add newline since this doesn't finnish naturally
             return
 
         response: dict = res.json()
@@ -562,8 +563,7 @@ class FetchSongs:
             response: requests.Response = requests.get( query, headers=self.authentication_headers )
 
             # handle bad response
-            if not response.status_code == 200:
-
+            if response.status_code != 200:
                 if response.status_code == 504:
                     # happens a lot.
                     # Spotify can't deliver the detailed analysis on time
@@ -663,7 +663,7 @@ class FetchSongs:
             new_lyrics_info: str # value to send to database. either the lyrics or %not available%.
                                  # This prevents from always requesting the same 'broken' songs and never moving on
 
-            if lyrics is not None:
+            if lyrics:
                 new_lyrics_info = lyrics
             else:
                 new_lyrics_info = '%not available%'
@@ -679,6 +679,7 @@ class FetchSongs:
             print(f"\radd lyrics info... " + str(int(i/len(rows)*100)) if i < len(rows)-2 else '100\n' + "%\t\t\t", end="")
 
             time.sleep(.2)
+        print() # add newline cause that sometimes doesn't happen naturally
 
     def add_songs_to_writtenby_table(self, song_number=50):
         print(f"\nadd songs and artists to writtenBy table... 100%", end="")
@@ -737,7 +738,6 @@ class FetchSongs:
                     }
                 )
             print(f"\radd songs and artists to writtenBy table... {int(i/len(response['tracks'])*100) if i < len(response['tracks'])-2 else 100}%", end="")
-
 
     def save_images_locally(self, album_number=30, artist_number=30):
         print(f"\ndownload cover... 100%", end="")
