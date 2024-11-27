@@ -460,6 +460,10 @@ class FetchSongs:
         res: requests.Response = requests.get( query, headers=self.authentication_headers )
 
         if res.status_code != 200:
+            if res.status_code == 403:
+                print('[CAUTION] fetching aufio feature data is deprecated and Spotify forbids it')
+                return
+
             print('[CAUTION] fetching audio features resulted in status code', res.status_code)
             print(res.text)
 
@@ -569,6 +573,10 @@ class FetchSongs:
                     # Spotify can't deliver the detailed analysis on time
                     # so the timeout expires. Just retry later
                     continue
+
+                if response.status_code == 403:
+                    print('[CAUTION] fetching audio analysis data is deprecated and Spotify forbids it')
+                    return
 
                 print('[CAUTION] fetching audio analysis data resulted in status code', response.status_code)
                 print('songID:', song_id)
