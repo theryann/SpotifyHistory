@@ -1057,8 +1057,8 @@ if __name__ == "__main__":
         for _ in range(10):
             songs.add_artist_info()
 
-        songs.add_audio_features()
-        songs.add_audio_analysis()
+        # songs.add_audio_features()  # deprecated
+        # songs.add_audio_analysis()  # deprecated
         #songs.save_images_locally()
         #songs.assign_uuids()
         songs.add_lyrics()
