@@ -963,6 +963,19 @@ class FetchSongs:
 
         print(f"\radd UUIDs...100%\t\t\t\t\t")
 
+        self.db.ensure_column('Stream', 'songUUID', 'TEXT')
+        
+        self.db.execute("""
+            UPDATE Stream
+            SET songUUID = Song.UUID
+            FROM Song
+            WHERE
+                Stream.songID = Song.ID
+                AND
+                Stream.songUUID IS NULL
+        """)
+        print(f"add UUIDs to Stream table")
+
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
 
