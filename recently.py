@@ -853,90 +853,119 @@ class FetchSongs:
         it is not checked wether a UUID exists already because they are uique for all intents and purposes
         """
         print(f"\nadd UUIDs...100%", end="")
-        num_cells_updated: int = 0
-
-
-        self.db.ensure_column(
-            table_name  = 'Song',
-            column_name = 'UUID',
-            data_type = 'TEXT'
-        )
-        self.db.ensure_column(
-            table_name  = 'Album',
-            column_name = 'UUID',
-            data_type = 'TEXT'
-        )
-
-        songs_without_uuid = self.db.get_all(f"""
-            SELECT DISTINCT title, artistID
-            FROM Song
-            JOIN writtenBy ON writtenBy.songID = Song.ID
-            WHERE Song.UUID IS NULL
-            LIMIT 500
-        """)
-
-        albums_without_uuid = self.db.get_all(f"""
-            SELECT DISTINCT name, artistID
-            FROM Album
-            WHERE Album.UUID IS NULL
-            LIMIT 500
-        """)
 
         ##################
         # UUIDS for Songs
         ##################
-        for song in songs_without_uuid:
-            unique_id: str = uuid.uuid4().hex
 
-            song_title = self.db.stringify( song['title'] )
+        def strip_song_title(title: str) -> str:
+            """strip name additions from the song title"""
 
-            self.db.update_cell(
-                table  = 'Song',
-                column = 'UUID',
-                new_value = unique_id,
-                where = f""" ID IN (
-                    SELECT ID
+            idx_parenth_open: int  = title.find('(')
+            idx_parenth_close: int = title.find(')')
+            idx_dash: int          = title.find(' - ')
+
+            text_in_parenthesis: str = ''
+            end_of_title_idx: int = len(title)
+
+            if idx_parenth_open < idx_parenth_close and idx_parenth_open > 0:
+                text_in_parenthesis = title[idx_parenth_open+1 : idx_parenth_close].lower()
+                end_of_title_idx = idx_parenth_open - 1
+
+            if idx_dash > -1:
+                text_in_parenthesis = title[idx_dash + 3:].lower()
+                end_of_title_idx = idx_dash
+
+            indicators = ['acoustic', 'feat.', 'edition', 'version', 'live', 'with', 'stripped', 'unplugged', 'mit', 'remaster', 'radio', 'edit']
+
+            for indicator in indicators:
+                if indicator in text_in_parenthesis:
+                    return title[:end_of_title_idx]
+            return title
+
+        number_of_songs: int = 5000
+        failed_song_ids = set() # sometimes maybe some part of the SQL query doesn't exist. for now (and propably ever) let's just skip them
+
+        i = 0 # iteration variable. It's this way bc it needs to be chnaged from within the loop (a for loop can't do that)
+        while i < number_of_songs:
+            i += 1
+
+            # get one song that has no ID
+            song_without_uuid = self.db.get_all(f"""
+                SELECT DISTINCT ID, title
+                FROM Song
+                WHERE Song.UUID IS NULL
+                LIMIT 1
+                OFFSET {len(failed_song_ids)}
+            """)
+
+            if len(song_without_uuid) == 0:
+                break
+
+            song_id: str = song_without_uuid[0]['ID']
+
+            if song_id in failed_song_ids:
+                i -= 1
+                continue
+
+            song_stripped_title: str = strip_song_title(song_without_uuid[0]['title'])
+
+            # get all songs by this artist
+            artists_songs: list[dict] = self.db.get_all(f"""
+                WITH targetSong AS (
+                    SELECT *
                     FROM Song
-                    JOIN writtenBy ON writtenBy.songID = Song.ID
-                    WHERE
-                        writtenBy.artistID = '{song['artistID']}'
-                        AND
-                        title = {song_title}
-                )
-                """
-            )
+                    WHERE Song.ID = '{song_id}'
 
-            num_cells_updated += 1
-            if num_cells_updated % 50 == 0:
-                print(f"\radd UUIDs... {num_cells_updated/10}%", end="")
-
-
-        ##################
-        # UUIDS for Albums
-        ##################
-        for album in albums_without_uuid:
-            unique_id: str = uuid.uuid4().hex
-
-            album_name = self.db.stringify( album['name'] )
-
-            self.db.update_cell(
-                table  = 'Album',
-                column = 'UUID',
-                new_value = unique_id,
-                where = f""" ID IN (
-                    SELECT ID
+                ), targetArtist AS (
+                    SELECT Album.artistID
                     FROM Album
-                    WHERE
-                        artistID = '{album['artistID']}'
-                        AND
-                        name = {album_name}
+                    WHERE Album.ID IN (
+                        SELECT albumID
+                        FROM Song
+                        WHERE Song.ID = (SELECT ID FROM targetSong)
+                    )
                 )
-                """
-            )
+                SELECT songID, title, Song.UUID
+                FROM writtenBy
+                JOIN Song ON Song.ID = writtenBy.songID
+                WHERE writtenBy.artistID IN targetArtist
+            """)
 
-            num_cells_updated += 1
-            if num_cells_updated % 50 == 0:
-                print(f"\radd UUIDs... {num_cells_updated/10}%", end="")
+            all_versions_of_song: list[dict] = [
+                song for song in artists_songs
+                if song_stripped_title.lower().strip() == strip_song_title(song['title']).lower().strip()
+            ]
+
+            # compensate for incomplete/corruped data
+            if len(all_versions_of_song) == 0:
+                failed_song_ids.add(song_id)
+
+            # generate uuid but still
+            # check if any version of this song already has a UUID
+            # this will be then assigned to all versions
+            song_uuid: str = uuid.uuid4().hex
+
+            versions_without_uuid: list[dict] = []
+
+            for version in all_versions_of_song:
+                if version['UUID']:
+                    song_uuid = version['UUID']
+                else:
+                    versions_without_uuid.append(version)
+
+            # enter UUIDs to songs to database
+            for song in versions_without_uuid:
+                self.db.update_cell(
+                    table        = 'Song',
+                    column       = 'UUID',
+                    new_value    = song_uuid,
+                    primary_keys = {'ID': song['songID']}
+                )
+
+            print(f"\radd UUIDs...{round(i/number_of_songs*100)}%\t\t\t\t\t", end="")
+
+        print(f"\radd UUIDs...100%\t\t\t\t\t")
 
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
@@ -1060,7 +1089,7 @@ if __name__ == "__main__":
         # songs.add_audio_features()  # deprecated
         # songs.add_audio_analysis()  # deprecated
         #songs.save_images_locally()
-        #songs.assign_uuids()
+        songs.assign_uuids()
         songs.add_lyrics()
 
         if debug:
