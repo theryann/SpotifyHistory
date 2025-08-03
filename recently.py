@@ -883,12 +883,9 @@ class FetchSongs:
                     return title[:end_of_title_idx]
             return title
 
-        number_of_songs: int = 5000
-        failed_song_ids = set() # sometimes maybe some part of the SQL query doesn't exist. for now (and propably ever) let's just skip them
+        number_of_songs: int = 200
 
-        i = 0 # iteration variable. It's this way bc it needs to be chnaged from within the loop (a for loop can't do that)
-        while i < number_of_songs:
-            i += 1
+        for i in range(number_of_songs):
 
             # get one song that has no ID
             song_without_uuid = self.db.get_all(f"""
@@ -896,7 +893,6 @@ class FetchSongs:
                 FROM Song
                 WHERE Song.UUID IS NULL
                 LIMIT 1
-                OFFSET {len(failed_song_ids)}
             """)
 
             if len(song_without_uuid) == 0:
@@ -904,9 +900,6 @@ class FetchSongs:
 
             song_id: str = song_without_uuid[0]['ID']
 
-            if song_id in failed_song_ids:
-                i -= 1
-                continue
 
             song_stripped_title: str = strip_song_title(song_without_uuid[0]['title'])
 
@@ -939,7 +932,10 @@ class FetchSongs:
 
             # compensate for incomplete/corruped data
             if len(all_versions_of_song) == 0:
-                failed_song_ids.add(song_id)
+                all_versions_of_song.append({
+                    'songID': song_without_uuid[0]['ID'],
+                    'UUID': None
+                })
 
             # generate uuid but still
             # check if any version of this song already has a UUID
@@ -1078,19 +1074,19 @@ if __name__ == "__main__":
 
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
-        #songs.dsgvo_data_to_database('Streaming/')
-        songs.recent_songs_to_database()
-        songs.add_songs_to_writtenby_table()
-        songs.add_album_info()
+        # #songs.dsgvo_data_to_database('Streaming/')
+        # songs.recent_songs_to_database()
+        # songs.add_songs_to_writtenby_table()
+        # songs.add_album_info()
 
-        for _ in range(10):
-            songs.add_artist_info()
+        # for _ in range(10):
+        #     songs.add_artist_info()
 
-        # songs.add_audio_features()  # deprecated
-        # songs.add_audio_analysis()  # deprecated
-        #songs.save_images_locally()
+        # # songs.add_audio_features()  # deprecated
+        # # songs.add_audio_analysis()  # deprecated
+        # #songs.save_images_locally()
         songs.assign_uuids()
-        songs.add_lyrics()
+        # songs.add_lyrics()
 
         if debug:
             break
