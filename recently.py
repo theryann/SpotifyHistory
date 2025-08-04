@@ -964,7 +964,7 @@ class FetchSongs:
         print(f"\radd UUIDs...100%\t\t\t\t\t")
 
         self.db.ensure_column('Stream', 'songUUID', 'TEXT')
-        
+
         self.db.execute("""
             UPDATE Stream
             SET songUUID = Song.UUID
@@ -1087,19 +1087,19 @@ if __name__ == "__main__":
 
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
-        # #songs.dsgvo_data_to_database('Streaming/')
-        # songs.recent_songs_to_database()
-        # songs.add_songs_to_writtenby_table()
-        # songs.add_album_info()
+        #songs.dsgvo_data_to_database('Streaming/')
+        songs.recent_songs_to_database()
+        songs.add_songs_to_writtenby_table()
+        songs.add_album_info()
 
-        # for _ in range(10):
-        #     songs.add_artist_info()
+        for _ in range(10):
+            songs.add_artist_info()
 
-        # # songs.add_audio_features()  # deprecated
-        # # songs.add_audio_analysis()  # deprecated
-        # #songs.save_images_locally()
+        # songs.add_audio_features()  # deprecated
+        # songs.add_audio_analysis()  # deprecated
+        #songs.save_images_locally()
         songs.assign_uuids()
-        # songs.add_lyrics()
+        songs.add_lyrics()
 
         if debug:
             break
