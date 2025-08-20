@@ -876,14 +876,15 @@ class FetchSongs:
                 text_in_parenthesis = title[idx_dash + 3:].lower()
                 end_of_title_idx = idx_dash
 
-            indicators = ['acoustic', 'feat.', 'edition', 'version', 'live', 'with', 'stripped', 'unplugged', 'mit', 'remaster', 'radio', 'edit']
+            indicators = ['acoustic', 'feat.', 'featuring', 'edition', 'version', 'live', 'with', 'stripped', 'unplugged', 'mit', 'remaster', 'remix', 'radio', 'edit', 'session', 'reimagined']
 
             for indicator in indicators:
                 if indicator in text_in_parenthesis:
                     return title[:end_of_title_idx]
             return title
 
-        number_of_songs: int = 200
+        number_of_songs:  int = 200
+        number_of_albums: int = 200
 
         for i in range(number_of_songs):
 
@@ -963,6 +964,7 @@ class FetchSongs:
 
         print(f"\radd UUIDs...100%\t\t\t\t\t")
 
+        # insert the generated song UUIDs to the Stream table
         self.db.ensure_column('Stream', 'songUUID', 'TEXT')
 
         self.db.execute("""
@@ -975,6 +977,9 @@ class FetchSongs:
                 Stream.songUUID IS NULL
         """)
         print(f"add UUIDs to Stream table")
+
+        # generate UUIDs for albums
+
 
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
@@ -1083,6 +1088,7 @@ if __name__ == "__main__":
     flags: list = sys.argv[1:]
     debug:   bool = '-d' in flags or '--debug'   in flags
     analyze: bool = '-a' in flags or '--analyze' in flags
+    test_feature: bool = '-t' in flags or '--test' in flags
     offline: bool = '--offline' in flags
 
     for user in tokens:
