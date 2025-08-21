@@ -5,6 +5,7 @@ import uuid
 import sys
 
 from datetime import datetime, timedelta
+from random import shuffle
 
 from credentials import tokens
 from refresh import TokenRefresh
@@ -980,6 +981,74 @@ class FetchSongs:
 
         # generate UUIDs for albums
 
+    def create_forgotten_favourites_playlist(self) -> None:
+        '''create a playlist of all the forgotten favourites of the past years (most streamed songs that I havent streamed for a year)'''
+
+        # get person information to get the user spotify ID
+        print('get profile')
+        user_query = f'https://api.spotify.com/v1/me'
+        user_response = requests.get( user_query, headers=self.authentication_headers ).json()
+        self.spotify_user_id: str = user_response['id']
+
+        # get list of existing playlists
+        print('get playlists')
+        playlists_query = f'https://api.spotify.com/v1/me/playlists?limit=50&offset=0'
+        playlists_response = requests.get( playlists_query, headers=self.authentication_headers ).json()
+        if self.debug:
+            with open('debug_playlists.json', 'w', encoding='utf-8') as fd:
+                json.dump(playlists_response, fd, indent=4)
+
+        forgotten_favs_playlist: dict = None
+        for playlist in playlists_response['items']:
+            if playlist['name'].lower() == 'Forgotten Favourits'.lower():
+                forgotten_favs_playlist = playlist
+                break
+
+        # create playlist if it doesn't exist
+        if not forgotten_favs_playlist:
+            print('create playlist')
+            new_playlist_url = f'https://api.spotify.com/v1/users/{self.spotify_user_id}/playlists'
+            playlists_response = requests.post(
+                new_playlist_url,
+                headers=self.authentication_headers,
+                json={
+                    'name': 'Forgotten Favourits',
+                    'description': 'die hab ich ja eeeewig nicht gehört',
+                    'public': False
+                }
+            )
+            forgotten_favs_playlist = playlists_response.json()
+
+        # set the tracks in playlist
+        # algorithm: get the most streamed songs that haven't been streamed in the last year and pick 30 random songs
+
+        oldest_timestamp: str = ( datetime.now() - timedelta(365) ).strftime('%F') # 365 days is the cutoff timestamp
+
+        db_rows: list[dict] = self.db.get_all(f'''
+            SELECT
+                Song.ID as            'ID',
+                Song.UUID as          'UUID',
+                Song.title as         'title',
+                count(*) as           'streams'
+            FROM Stream
+            JOIN Song ON Stream.songID = Song.ID
+            JOIN Album On Album.ID = Song.albumID
+            WHERE Song.UUID NOT IN (
+                SELECT DISTINCT Stream.songUUID
+                FROM Stream
+                WHERE Stream.timeStamp >= '{oldest_timestamp}'
+            )
+            GROUP BY Song.UUID
+            ORDER BY streams desc
+            LIMIT 200
+        ''')
+
+        spotify_uris: list[str] =  list( map(lambda s: 'spotify:track:' + s['ID'], db_rows) )
+
+        shuffle(spotify_uris)
+        spotify_uris = spotify_uris[:30]
+
+
 
     def read_env(self, variable_name: str, default=None) -> str:
         env_variables: dict = {}
@@ -1094,6 +1163,12 @@ if __name__ == "__main__":
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
         #songs.dsgvo_data_to_database('Streaming/')
+
+        if test_feature:
+            songs.create_forgotten_favourites_playlist()
+            quit()
+
+
         songs.recent_songs_to_database()
         songs.add_songs_to_writtenby_table()
         songs.add_album_info()
