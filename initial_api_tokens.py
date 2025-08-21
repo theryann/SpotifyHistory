@@ -14,6 +14,7 @@ scopes = [
     'user-library-read',
     'playlist-modify-public',
     'playlist-modify-private',
+    'playlist-read-private',
 ]
 
 plain_redirect_uri = "https://github.com/theryann"

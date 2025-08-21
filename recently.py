@@ -984,41 +984,6 @@ class FetchSongs:
     def create_forgotten_favourites_playlist(self) -> None:
         '''create a playlist of all the forgotten favourites of the past years (most streamed songs that I havent streamed for a year)'''
 
-        # get person information to get the user spotify ID
-        print('get profile')
-        user_query = f'https://api.spotify.com/v1/me'
-        user_response = requests.get( user_query, headers=self.authentication_headers ).json()
-        self.spotify_user_id: str = user_response['id']
-
-        # get list of existing playlists
-        print('get playlists')
-        playlists_query = f'https://api.spotify.com/v1/me/playlists?limit=50&offset=0'
-        playlists_response = requests.get( playlists_query, headers=self.authentication_headers ).json()
-        if self.debug:
-            with open('debug_playlists.json', 'w', encoding='utf-8') as fd:
-                json.dump(playlists_response, fd, indent=4)
-
-        forgotten_favs_playlist: dict = None
-        for playlist in playlists_response['items']:
-            if playlist['name'].lower() == 'Forgotten Favourits'.lower():
-                forgotten_favs_playlist = playlist
-                break
-
-        # create playlist if it doesn't exist
-        if not forgotten_favs_playlist:
-            print('create playlist')
-            new_playlist_url = f'https://api.spotify.com/v1/users/{self.spotify_user_id}/playlists'
-            playlists_response = requests.post(
-                new_playlist_url,
-                headers=self.authentication_headers,
-                json={
-                    'name': 'Forgotten Favourits',
-                    'description': 'die hab ich ja eeeewig nicht gehört',
-                    'public': False
-                }
-            )
-            forgotten_favs_playlist = playlists_response.json()
-
         # set the tracks in playlist
         # algorithm: get the most streamed songs that haven't been streamed in the last year and pick 30 random songs
 
@@ -1048,6 +1013,75 @@ class FetchSongs:
         shuffle(spotify_uris)
         spotify_uris = spotify_uris[:30]
 
+        # get person information to get the user spotify ID
+        user_query = f'https://api.spotify.com/v1/me'
+        user_response = requests.get( user_query, headers=self.authentication_headers ).json()
+        self.spotify_user_id: str = user_response['id']
+
+
+        # get list of existing playlists
+        playlists_query = f'https://api.spotify.com/v1/me/playlists?limit=50'
+        playlists_response = requests.get( playlists_query, headers=self.authentication_headers ).json()
+        if self.debug:
+            with open('debug_playlists.json', 'w', encoding='utf-8') as fd:
+                json.dump(playlists_response, fd, indent=4)
+
+        forgotten_favs_playlist: dict = None
+        for playlist in playlists_response['items']:
+            if playlist['name'] == 'Forgotten Favourits':
+                forgotten_favs_playlist = playlist
+                break
+
+        # create playlist if it doesn't exist
+        if forgotten_favs_playlist is None:
+            new_playlist_url = f'https://api.spotify.com/v1/users/{self.spotify_user_id}/playlists'
+            playlists_response = requests.post(
+                new_playlist_url,
+                headers=self.authentication_headers,
+                json={
+                    'name': 'Forgotten Favourits',
+                    'description': 'die hab ich ja eeeewig nicht gehört',
+                    'public': False
+                }
+            )
+            forgotten_favs_playlist = playlists_response.json()
+
+        # delete existing tracks
+        playlist_id: str = forgotten_favs_playlist['id']
+        snapshot_id: str = forgotten_favs_playlist['snapshot_id']
+
+        # fetch tracks on the playlist
+        tracks_response = requests.get(
+            f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks?fields=items%28track.uri%29&limit=50&offset=0',
+            headers=self.authentication_headers
+        ).json()
+
+        tracks: list[str] = list(map(lambda s: {'uri': s['track']['uri']}, tracks_response['items']))
+
+        if len(tracks) > 0:
+            playlists_response = requests.delete(
+                f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks',
+                headers=self.authentication_headers,
+                json={
+                    'tracks': tracks,
+                    'snapshot_id': snapshot_id
+                }
+            ).json()
+
+            print(playlists_response)
+            snapshot_id = playlists_response['snapshot_id']
+            print(snapshot_id)
+
+        # add new tracks
+
+        playlists_response = requests.post(
+            f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks',
+            headers=self.authentication_headers,
+            json={
+                'uris': spotify_uris,
+                'position': 0
+            }
+        ).json()
 
 
     def read_env(self, variable_name: str, default=None) -> str:
@@ -1155,18 +1189,20 @@ class Analyzer:
 
 if __name__ == "__main__":
     flags: list = sys.argv[1:]
-    debug:   bool = '-d' in flags or '--debug'   in flags
-    analyze: bool = '-a' in flags or '--analyze' in flags
+    debug:    bool = '-d' in flags or '--debug'    in flags
+    analyze:  bool = '-a' in flags or '--analyze'  in flags
+    playlist: bool = '-p' in flags or '--playlist' in flags
+    offline:  bool = '-o' in flags or '--offline'  in flags
     test_feature: bool = '-t' in flags or '--test' in flags
-    offline: bool = '--offline' in flags
 
     for user in tokens:
         songs = FetchSongs(user=user, offline=offline, debug=debug)
         #songs.dsgvo_data_to_database('Streaming/')
 
-        if test_feature:
+        if playlist:
             songs.create_forgotten_favourites_playlist()
-            quit()
+            if debug:
+                quit()
 
 
         songs.recent_songs_to_database()
